@@ -233,17 +233,17 @@
         </div>
       </div>
 
-      <!-- Import Activity -->
+      <!-- 接手記帳 -->
       <div class="mb-4">
         <button onclick="showImportActivityModal()" 
-                class="w-full hk-card p-4 border border-slate-100 hover:border-violet-200 active:scale-[0.985] transition-all flex items-center justify-between gap-3 text-left">
+                class="w-full hk-card p-4 border border-[#25D366]/20 bg-gradient-to-r from-[#25D366]/5 to-white hover:border-[#25D366]/40 active:scale-[0.985] transition-all flex items-center justify-between gap-3 text-left">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-              <i class="fa-solid fa-file-import"></i>
+            <div class="w-10 h-10 rounded-2xl bg-[#25D366]/15 text-[#128C7E] flex items-center justify-center shrink-0">
+              <i class="fa-brands fa-whatsapp text-lg"></i>
             </div>
             <div class="min-w-0">
-              <div class="font-semibold text-sm text-slate-800">匯入活動</div>
-              <div class="text-[10px] text-slate-500 mt-0.5">貼上朋友 send 嗰段記帳資料，或者揀佢傳嚟嘅檔案</div>
+              <div class="font-semibold text-sm text-slate-800">接手記帳</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">朋友 send 咗記帳資料？長撳 WhatsApp 訊息複製，再喺度貼上</div>
             </div>
           </div>
           <i class="fa-solid fa-chevron-right text-slate-300 shrink-0"></i>
@@ -279,9 +279,9 @@
         
         <div class="flex items-center gap-x-2">
           <button onclick="exportCurrentActivity()" 
-                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl text-violet-600 hover:bg-violet-50 active:bg-violet-100 transition-colors font-medium">
-            <i class="fa-solid fa-file-export"></i>
-            <span class="hidden sm:inline">匯出活動</span>
+                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 active:bg-[#25D366]/25 transition-colors font-semibold">
+            <i class="fa-brands fa-whatsapp"></i>
+            <span>複製俾朋友</span>
           </button>
           <button onclick="deleteCurrentActivity()" 
                   class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors font-medium">
@@ -325,7 +325,7 @@
         <i class="fa-solid fa-mobile-screen text-violet-500 text-sm mt-0.5 shrink-0"></i>
         <p class="flex-1 text-xs leading-relaxed text-violet-700">
           呢個 app 資料只存在你自己部電話/電腦入面，唔會即時 share 畀其他人。
-          想同朋友一齊記帳？撳右上角「<span class="font-semibold">匯出活動</span>」複製記帳資料 send 畀佢哋，佢哋喺活動列表用「<span class="font-semibold">匯入活動</span>」貼返入去。
+          想交俾朋友接手？撳「<span class="font-semibold">複製俾朋友</span>」→ 去 WhatsApp <span class="font-semibold">貼上</span> send 就得，<span class="font-semibold">唔使下載檔案</span>。朋友喺活動列表撳「<span class="font-semibold">接手記帳</span>」貼返入去。
         </p>
         <button type="button" onclick="dismissLocalDataNotice()" aria-label="關閉提示"
                 class="w-6 h-6 -mr-1 -mt-0.5 shrink-0 flex items-center justify-center text-violet-400 hover:text-violet-700 hover:bg-violet-100 rounded-lg transition-colors">
@@ -536,9 +536,9 @@
             <button onclick="generateWhatsAppShare()" 
                     class="w-full mt-4 flex items-center justify-center gap-2.5 h-12 bg-[#25D366] hover:bg-[#20bd5a] active:bg-[#1da851] text-white rounded-2xl text-sm font-bold shadow-md transition-all">
               <i class="fa-brands fa-whatsapp text-xl"></i>
-              <span>生成 WhatsApp 分享文字</span>
+              <span>分享結算結果</span>
             </button>
-            <p class="text-[10px] text-center text-slate-400 mt-1.5">一鍵複製結算結果，send 畀朋友</p>
+            <p class="text-[10px] text-center text-slate-400 mt-1.5">複製邊個應收/應俾，send 畀朋友睇（唔係接手用）</p>
           </div>
           
           <!-- Suggested Settlements + 阿公操作 -->
@@ -795,7 +795,7 @@
     </div>
   </div>
 
-  <!-- Import Activity Modal -->
+  <!-- 接手記帳 Modal -->
   <div id="import-activity-modal" onclick="if (event.target.id === 'import-activity-modal') hideImportActivityModal()" 
        class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
     <div onclick="event.stopImmediatePropagation()" 
@@ -805,30 +805,31 @@
         <div class="flex justify-between items-start">
           <div>
             <div class="flex items-center gap-2">
-              <i class="fa-solid fa-file-import text-violet-500 text-xl"></i>
-              <div class="font-bold text-xl">匯入活動</div>
+              <i class="fa-brands fa-whatsapp text-[#25D366] text-xl"></i>
+              <div class="font-bold text-xl">接手記帳</div>
             </div>
-            <div class="text-xs text-slate-500 mt-1">貼上朋友複製畀你嗰段文字，或者揀佢 WhatsApp 傳嚟嘅檔案</div>
+            <div class="text-xs text-slate-500 mt-1">朋友 send 咗記帳資料？長撳 WhatsApp 訊息全段複製，再喺度貼上</div>
           </div>
           <button onclick="hideImportActivityModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
         </div>
       </div>
 
       <div class="flex-1 min-h-0 overflow-y-auto px-6 sm:px-7 py-4 space-y-4">
-        <div>
-          <label class="block text-sm font-semibold text-slate-600 mb-1.5">記帳資料</label>
-          <textarea id="import-activity-json" rows="6" placeholder="長撳貼上朋友 send 嗰大段文字…"
-                    oninput="previewImportActivity()"
-                    class="w-full px-4 py-3 border border-slate-200 focus:border-violet-400 rounded-2xl text-xs outline-none resize-none font-mono"></textarea>
+        <div class="px-3 py-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/15 text-xs text-slate-700 leading-relaxed space-y-2">
+          <div class="font-semibold text-[#128C7E]">點樣接手？</div>
+          <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-[#25D366] text-white text-[10px] font-bold flex items-center justify-center">1</span><span>打開朋友 send 嘅 WhatsApp 訊息</span></div>
+          <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-[#25D366] text-white text-[10px] font-bold flex items-center justify-center">2</span><span>長撳條訊息 → <strong>複製</strong>（成段複製就得）</span></div>
+          <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-[#25D366] text-white text-[10px] font-bold flex items-center justify-center">3</span><span>喺下面貼上 → 撳「開始接手」</span></div>
         </div>
 
         <div>
-          <input id="import-activity-file" type="file" accept=".json,application/json" class="hidden" onchange="loadImportActivityFile(event)">
-          <button type="button" onclick="document.getElementById('import-activity-file').click()"
-                  class="w-full h-11 border border-dashed border-slate-300 hover:border-violet-300 hover:bg-violet-50/50 rounded-2xl text-sm font-medium text-slate-600 transition-colors">
-            <i class="fa-solid fa-folder-open mr-1.5"></i>揀朋友傳嚟嘅檔案
-          </button>
+          <label class="block text-sm font-semibold text-slate-600 mb-1.5">貼上朋友 send 嘅內容</label>
+          <textarea id="import-activity-json" rows="5" placeholder="長撳呢度 → 貼上 WhatsApp 複製嘅內容…"
+                    oninput="previewImportActivity()"
+                    class="w-full px-4 py-3 border border-slate-200 focus:border-[#25D366] rounded-2xl text-sm outline-none resize-none"></textarea>
         </div>
+
+        <input id="import-activity-file" type="file" accept=".json,application/json" class="hidden" onchange="loadImportActivityFile(event)">
 
         <div id="import-activity-preview-wrap" class="hidden px-3 py-2.5 rounded-2xl bg-violet-50 border border-violet-100 text-xs text-violet-800 leading-relaxed">
           <div id="import-activity-preview"></div>
@@ -841,7 +842,7 @@
 
         <div class="px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-600 leading-relaxed">
           <i class="fa-solid fa-circle-info mr-1 text-slate-400"></i>
-          匯入會連埋活動嘅阿公餘額一齊更新。要同步最新版，請用「覆蓋現有活動」。
+          接手會連埋阿公餘額一齊更新。如果之前接過手，用「更新現有活動」覆蓋舊記錄。
         </div>
       </div>
 
@@ -849,14 +850,55 @@
         <button onclick="hideImportActivityModal()" 
                 class="sm:flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
         <button id="import-activity-new-btn" onclick="confirmImportActivity('new')" disabled
-                class="sm:flex-1 h-12 bg-violet-500 hover:bg-violet-600 active:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all">
-          匯入為新活動
+                class="sm:flex-1 h-12 bg-[#25D366] hover:bg-[#20bd5a] active:bg-[#1da851] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all">
+          開始接手
         </button>
         <button id="import-activity-replace-btn" onclick="confirmImportActivity('replace')" disabled
                 class="hidden sm:flex-1 h-12 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all">
-          覆蓋現有活動
+          更新現有活動
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- 複製俾朋友成功 Modal -->
+  <div id="export-share-modal" onclick="if (event.target.id === 'export-share-modal') hideExportShareModal()" 
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="w-full sm:w-[460px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+      
+      <div class="text-center mb-5">
+        <div class="mx-auto w-14 h-14 bg-[#25D366]/15 rounded-2xl flex items-center justify-center mb-3">
+          <i class="fa-solid fa-check text-[#25D366] text-2xl"></i>
+        </div>
+        <div class="font-bold text-xl text-slate-900">已複製記帳資料！</div>
+        <div class="text-sm text-slate-500 mt-1">而家去 WhatsApp 貼上 send 畀朋友</div>
+      </div>
+
+      <div class="space-y-3 mb-5">
+        <div class="flex items-start gap-3 p-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/10">
+          <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">1</span>
+          <div class="text-sm text-slate-700 pt-0.5">打開 <strong>WhatsApp</strong>，搵個 group 或者朋友</div>
+        </div>
+        <div class="flex items-start gap-3 p-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/10">
+          <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">2</span>
+          <div class="text-sm text-slate-700 pt-0.5">長撳輸入框 → <strong>貼上</strong> → Send</div>
+        </div>
+        <div class="flex items-start gap-3 p-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/10">
+          <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">3</span>
+          <div class="text-sm text-slate-700 pt-0.5">朋友開神算子 → 撳「<strong>接手記帳</strong>」→ 長撳你條訊息複製 → 貼上</div>
+        </div>
+      </div>
+
+      <div class="px-3 py-2.5 rounded-2xl bg-violet-50 border border-violet-100 text-xs text-violet-700 leading-relaxed mb-5">
+        <i class="fa-solid fa-circle-info mr-1"></i>
+        <strong>唔使下載任何檔案！</strong>撳「複製俾朋友」就已經複製好，直接去 WhatsApp 貼上就得。
+      </div>
+
+      <button onclick="hideExportShareModal()" 
+              class="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] active:bg-[#1da851] text-white rounded-2xl font-bold text-sm transition-all">
+        明白晒！
+      </button>
     </div>
   </div>
 
@@ -926,7 +968,7 @@
 
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
-    const APP_VERSION = '1.0.0';
+    const APP_VERSION = '1.1.0';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
@@ -2455,36 +2497,74 @@
       };
     }
 
-    function downloadJsonFile(filename, content) {
-      const blob = new Blob([content], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+    const SHARE_DATA_START = '━━ 資料開始 ━━';
+    const SHARE_DATA_END = '━━ 資料結束 ━━';
+
+    function buildSharePayloadText(act) {
+      const payload = buildActivityExportPayload(act);
+      const json = JSON.stringify(payload);
+      return `📋 神算子記帳資料｜${act.name}
+👉 接手人：長撳全段複製 → 開神算子 → 撳「接手記帳」→ 貼上就得
+（唔使下載檔案！）
+
+${SHARE_DATA_START}
+${json}
+${SHARE_DATA_END}`;
+    }
+
+    function extractJsonFromImportRaw(raw) {
+      const trimmed = (raw || '').trim();
+      if (!trimmed) return '';
+
+      if (trimmed.includes(SHARE_DATA_START)) {
+        const start = trimmed.indexOf(SHARE_DATA_START) + SHARE_DATA_START.length;
+        const end = trimmed.indexOf(SHARE_DATA_END);
+        if (end > start) return trimmed.slice(start, end).trim();
+      }
+
+      const first = trimmed.indexOf('{');
+      const last = trimmed.lastIndexOf('}');
+      if (first >= 0 && last > first) return trimmed.slice(first, last + 1);
+      return trimmed;
+    }
+
+    function showExportShareModal() {
+      const modal = document.getElementById('export-share-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lockBodyScroll();
+    }
+
+    function hideExportShareModal() {
+      const modal = document.getElementById('export-share-modal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        unlockBodyScroll();
+      }
     }
 
     function exportCurrentActivity() {
       const act = getCurrentActivity();
       if (!act) return;
 
-      const payload = buildActivityExportPayload(act);
-      const json = JSON.stringify(payload, null, 2);
-      const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const filename = `神算子-${sanitizeFilename(act.name)}-${dateTag}.json`;
-
-      copyTextToClipboard(json, '記帳資料已複製！同時已儲存檔案，可以 WhatsApp send 畀朋友');
-      downloadJsonFile(filename, json);
+      const shareText = buildSharePayloadText(act);
+      navigator.clipboard.writeText(shareText).then(() => {
+        showExportShareModal();
+      }).catch(() => {
+        prompt('請手動複製以下內容，再去 WhatsApp 貼上：', shareText);
+      });
     }
 
     function parseActivityImportRaw(raw) {
       const trimmed = (raw || '').trim();
-      if (!trimmed) throw new Error('請貼上或揀朋友 send 嘅記帳資料');
+      if (!trimmed) throw new Error('請貼上朋友 WhatsApp send 嘅內容');
 
-      const data = JSON.parse(trimmed);
+      const jsonText = extractJsonFromImportRaw(trimmed);
+      if (!jsonText) throw new Error('搵唔到記帳資料，請確認已複製成段 WhatsApp 訊息');
+
+      const data = JSON.parse(jsonText);
       if (data && data.format === ACTIVITY_EXPORT_FORMAT && data.activity) {
         return data.activity;
       }
@@ -2494,7 +2574,7 @@
       if (data && typeof data.name === 'string' && Array.isArray(data.expenses)) {
         return data;
       }
-      throw new Error('呢段唔似神算子／圓子基金嘅記帳資料，請確認朋友係用「匯出活動」複製嘅');
+      throw new Error('呢段唔似記帳資料，請確認朋友係用「複製俾朋友」send 畀你嘅 WhatsApp 訊息');
     }
 
     function normalizeImportedActivity(raw) {
@@ -2504,7 +2584,7 @@
 
       const act = {
         id: raw.id || generateId(),
-        name: raw.name.trim() || '匯入活動',
+        name: raw.name.trim() || '接手活動',
         dateStart: raw.dateStart || null,
         dateEnd: raw.dateEnd || null,
         participants: Array.isArray(raw.participants) ? raw.participants.map(p => String(p).trim()).filter(Boolean) : [],
@@ -2629,7 +2709,7 @@
 
         const existing = activities.find(a => a.id === normalized.id);
         if (existing) {
-          conflictText.textContent = `你部機已有「${existing.name}」。覆蓋會用匯入資料取代現有記錄；匯入為新活動會另開一份副本。`;
+          conflictText.textContent = `你部機已有「${existing.name}」。「更新現有活動」會用新資料取代舊記錄；「開始接手」會另開一份副本。`;
           conflictWrap?.classList.remove('hidden');
           replaceBtn?.classList.remove('hidden');
           if (replaceBtn) replaceBtn.disabled = false;
@@ -2680,7 +2760,7 @@
           showToast('搵唔到要覆蓋嘅活動', 'error');
           return;
         }
-        if (!confirm(`確定用匯入資料覆蓋「${existing.name}」？現有開支記錄會被取代。`)) return;
+        if (!confirm(`確定用新資料更新「${existing.name}」？現有開支記錄會被取代。`)) return;
 
         imported.updatedAt = Date.now();
         const idx = activities.findIndex(a => a.id === imported.id);
@@ -2688,7 +2768,7 @@
         saveToStorage();
         hideImportActivityModal();
         selectActivity(imported.id);
-        showToast('活動已覆蓋更新');
+        showToast('記帳已更新！');
         return;
       }
 
@@ -2700,7 +2780,7 @@
       saveToStorage();
       hideImportActivityModal();
       selectActivity(imported.id);
-      showToast(existing ? '已匯入為新活動' : '活動已匯入');
+      showToast(existing ? '已接手為新活動' : '記帳已接手！');
     }
 
     // ==================== Settlement Copy ====================
@@ -2772,7 +2852,7 @@
       }
 
       text += `\n${divider}\n`;
-      text += `🔗 想一齊更新開支？主記帳人撳「匯出活動」複製記帳資料 send 畀大家，大家再喺「匯入活動」貼返入去更新。\n`;
+      text += `🔗 想交俾下一位接手？撳「複製俾朋友」→ WhatsApp 貼上 send 就得。接手人撳「接手記帳」貼返入去。\n`;
       text += `📲 未用過神算子？開呢個連結：\n${SHARE_APP_URL}`;
 
       return text;
@@ -2789,7 +2869,7 @@
     function generateWhatsAppShare() {
       const text = buildWhatsAppShareText();
       if (!text) return;
-      copyTextToClipboard(text, '已生成 WhatsApp 分享文字');
+      copyTextToClipboard(text, '結算結果已複製！去 WhatsApp 貼上 send 畀朋友');
     }
 
     function copySettlementLine(from, to, amount) {
@@ -3168,7 +3248,7 @@
 4. 有需要可以開「阿公」— 每個活動有自己嘅公數，墊支同結算轉入
 5. 系統自動計算每人結餘同最少還款方案
 
-想同朋友一齊記帳？用「匯出活動」複製資料 send 畀朋友，佢哋用「匯入活動」貼返入去。
+想交俾朋友接手？撳「複製俾朋友」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得，唔使下載檔案。
 
 覺得計錯數？撳右上角 🐛 報告問題。
 
