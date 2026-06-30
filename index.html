@@ -325,7 +325,7 @@
         <i class="fa-solid fa-mobile-screen text-violet-500 text-sm mt-0.5 shrink-0"></i>
         <p class="flex-1 text-xs leading-relaxed text-violet-700">
           呢個 app 資料只存在你自己部電話/電腦入面，唔會即時 share 畀其他人。
-          想交俾朋友接手？撳「<span class="font-semibold">複製俾朋友</span>」→ 去 WhatsApp <span class="font-semibold">貼上</span> send 就得，<span class="font-semibold">唔使下載檔案</span>。朋友喺活動列表撳「<span class="font-semibold">接手記帳</span>」貼返入去。
+          想交俾朋友接手？撳「<span class="font-semibold">複製俾朋友</span>」→ 去 WhatsApp <span class="font-semibold">貼上</span> send 就得。朋友喺活動列表撳「<span class="font-semibold">接手記帳</span>」貼返入去。
         </p>
         <button type="button" onclick="dismissLocalDataNotice()" aria-label="關閉提示"
                 class="w-6 h-6 -mr-1 -mt-0.5 shrink-0 flex items-center justify-center text-violet-400 hover:text-violet-700 hover:bg-violet-100 rounded-lg transition-colors">
@@ -892,7 +892,7 @@
 
       <div class="px-3 py-2.5 rounded-2xl bg-violet-50 border border-violet-100 text-xs text-violet-700 leading-relaxed mb-5">
         <i class="fa-solid fa-circle-info mr-1"></i>
-        <strong>唔使下載任何檔案！</strong>撳「複製俾朋友」就已經複製好，直接去 WhatsApp 貼上就得。
+        撳「複製俾朋友」就已經複製好，直接去 WhatsApp 貼上就得。
       </div>
 
       <button onclick="hideExportShareModal()" 
@@ -2505,7 +2505,6 @@
       const json = JSON.stringify(payload);
       return `📋 神算子記帳資料｜${act.name}
 👉 接手人：長撳全段複製 → 開神算子 → 撳「接手記帳」→ 貼上就得
-（唔使下載檔案！）
 
 ${SHARE_DATA_START}
 ${json}
@@ -3248,7 +3247,7 @@ ${SHARE_DATA_END}`;
 4. 有需要可以開「阿公」— 每個活動有自己嘅公數，墊支同結算轉入
 5. 系統自動計算每人結餘同最少還款方案
 
-想交俾朋友接手？撳「複製俾朋友」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得，唔使下載檔案。
+想交俾朋友接手？撳「複製俾朋友」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得。
 
 覺得計錯數？撳右上角 🐛 報告問題。
 
