@@ -1,0 +1,3183 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#7c3aed">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="神算子">
+  <meta name="description" content="朋友之間嘅群組分帳神器，支援阿公墊支同結算">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <title>神算子 — 朋友分帳神器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Inter:wght@400;500;600&amp;display=swap');
+    
+    :root {
+      --primary: #7c3aed;
+    }
+    
+    body {
+      font-family: 'Noto Sans TC', 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    .expense-card {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .expense-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+    }
+    
+    .participant-badge {
+      transition: all 0.1s ease;
+    }
+    
+    .participant-badge:hover {
+      background-color: #f1e7ff;
+    }
+    
+    .section-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.025em;
+      color: #475569;
+    }
+    
+    .money {
+      font-variant-numeric: tabular-nums;
+    }
+    
+    .settlement-row {
+      transition: background-color 0.1s ease;
+    }
+    
+    .settlement-row:hover {
+      background-color: #f8fafc;
+    }
+    
+    .app-container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+    
+    .hk-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgb(15 23 42 / 0.07), 0 2px 4px -2px rgb(15 23 42 / 0.07);
+    }
+    
+    .nav-active {
+      background-color: #f5f3ff;
+      color: #7c3aed;
+      font-weight: 600;
+    }
+    
+    .balance-positive {
+      background-color: #f5f3ff;
+      color: #7c3aed;
+    }
+    
+    .balance-negative {
+      background-color: #fef2f2;
+      color: #ef4444;
+    }
+    
+    .amount {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    
+    .empty-state {
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    }
+
+    .date-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .date-input {
+      width: 100%;
+      min-width: 0;
+      height: 3rem;
+      min-height: 3rem;
+      padding: 0 0.75rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      background: #fff;
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .date-input:focus {
+      outline: none;
+      border-color: #a78bfa;
+    }
+
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left;
+    }
+
+    @media (max-width: 639px) {
+      .date-input {
+        height: 2.75rem;
+        min-height: 2.75rem;
+        padding: 0 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .date-fields-row {
+        gap: 0.5rem;
+      }
+    }
+
+    .modal-overlay {
+      z-index: 300;
+    }
+
+    .modal-sheet {
+      position: relative;
+      z-index: 1;
+      max-height: min(88vh, 640px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background: #fff;
+      padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
+
+    body.modal-open {
+      overflow: hidden;
+      touch-action: none;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="app-container px-4 sm:px-6">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-x-3">
+          <div class="w-10 h-10 bg-violet-500 rounded-2xl flex items-center justify-center shadow-sm">
+            <i class="fa-solid fa-wand-magic-sparkles text-white text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">神算子</h1>
+            <p class="text-[10px] text-slate-500 -mt-1">一鍵神算，唔使爭</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-x-2 text-sm">
+          <!-- 阿公餘額（活動內） -->
+          <button id="header-fund-btn" onclick="showFundManagerModal()" 
+                  class="hidden items-center gap-x-1.5 pl-3 pr-4 h-9 bg-violet-100 hover:bg-violet-200 active:bg-violet-300 transition-colors rounded-2xl text-violet-700 font-medium text-sm">
+            <i class="fa-solid fa-coins"></i>
+            <span class="hidden sm:inline text-xs">阿公</span>
+            <span id="fund-balance-header" class="font-bold tabular-nums">HK$0.00</span>
+          </button>
+
+          <div class="hidden sm:flex items-center gap-x-1.5 px-3 py-1.5 bg-slate-100 rounded-2xl text-slate-600">
+            <i class="fa-solid fa-mobile-screen text-xs"></i>
+            <span class="text-xs font-medium">手機友好</span>
+          </div>
+          <button onclick="showBugReportModal()" 
+                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-2xl transition-colors"
+                  title="報告問題">
+            <i class="fa-solid fa-bug text-lg"></i>
+          </button>
+          <button onclick="showHelp()" 
+                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-2xl transition-colors">
+            <i class="fa-solid fa-question-circle text-lg"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="app-container px-4 sm:px-6 py-6">
+    
+    <!-- Activities List View -->
+    <div id="view-activities">
+      <div class="flex items-end justify-between mb-5">
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight">我的活動</h2>
+          <p class="text-slate-500 text-sm mt-0.5">選擇一個活動開始記帳</p>
+        </div>
+        <button onclick="showCreateActivityModal()" 
+                class="hidden sm:flex items-center gap-x-2 bg-violet-500 hover:bg-violet-600 active:bg-violet-700 transition-all text-white px-5 h-11 rounded-2xl text-sm font-semibold shadow-sm">
+          <i class="fa-solid fa-plus"></i>
+          <span>建立新活動</span>
+        </button>
+      </div>
+
+      <!-- Create Activity (Mobile prominent) -->
+      <div class="sm:hidden mb-4">
+        <div class="hk-card p-4 border border-slate-100">
+          <div class="text-xs font-semibold text-slate-500 mb-2">快速建立新活動</div>
+          <div class="flex gap-2 min-w-0">
+            <input id="quick-create-input" type="text" placeholder="例如：唱K + 食飯" 
+                   class="flex-1 min-w-0 px-4 h-11 border border-slate-200 focus:border-violet-400 rounded-2xl text-sm outline-none"
+                   onkeydown="if(event.key==='Enter') createQuickActivity()">
+            <button onclick="createQuickActivity()" 
+                    class="shrink-0 whitespace-nowrap px-4 h-11 bg-violet-500 text-white rounded-2xl font-semibold text-sm active:bg-violet-600">建立</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import Activity -->
+      <div class="mb-4">
+        <button onclick="showImportActivityModal()" 
+                class="w-full hk-card p-4 border border-slate-100 hover:border-violet-200 active:scale-[0.985] transition-all flex items-center justify-between gap-3 text-left">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-file-import"></i>
+            </div>
+            <div class="min-w-0">
+              <div class="font-semibold text-sm text-slate-800">匯入活動</div>
+              <div class="text-[10px] text-slate-500 mt-0.5">貼上朋友 send 嗰段記帳資料，或者揀佢傳嚟嘅檔案</div>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right text-slate-300 shrink-0"></i>
+        </button>
+      </div>
+
+      <!-- Activities Grid -->
+      <div id="activities-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- Populated by JS -->
+      </div>
+
+      <div id="activities-empty" class="hidden mt-8 text-center py-8">
+        <div class="mx-auto w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mb-4">
+          <i class="fa-solid fa-users text-3xl text-slate-400"></i>
+        </div>
+        <p class="text-slate-500">仲未有任何活動</p>
+        <button onclick="showCreateActivityModal()" 
+                class="mt-4 text-violet-600 font-semibold text-sm flex items-center gap-1.5 mx-auto">
+          <i class="fa-solid fa-plus"></i> 建立第一個活動
+        </button>
+      </div>
+    </div>
+
+    <!-- Activity Detail View -->
+    <div id="view-detail" class="hidden">
+      <!-- Top bar -->
+      <div class="flex items-center justify-between mb-4">
+        <button onclick="backToList()" 
+                class="flex items-center gap-x-2 text-slate-600 hover:text-slate-900 font-medium text-sm px-3 py-2 -ml-3 rounded-2xl hover:bg-white active:bg-slate-100 transition-colors">
+          <i class="fa-solid fa-arrow-left text-base"></i>
+          <span>返回活動列表</span>
+        </button>
+        
+        <div class="flex items-center gap-x-2">
+          <button onclick="exportCurrentActivity()" 
+                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl text-violet-600 hover:bg-violet-50 active:bg-violet-100 transition-colors font-medium">
+            <i class="fa-solid fa-file-export"></i>
+            <span class="hidden sm:inline">匯出活動</span>
+          </button>
+          <button onclick="deleteCurrentActivity()" 
+                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors font-medium">
+            <i class="fa-solid fa-trash-can"></i>
+            <span class="hidden sm:inline">刪除活動</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Activity Name + Date -->
+      <div class="mb-5">
+        <div class="flex items-center gap-x-3">
+          <div id="activity-name-display" 
+               class="text-3xl font-bold tracking-tight text-slate-900 cursor-pointer hover:text-violet-600 transition-colors"
+               onclick="editActivityName()"></div>
+          <button onclick="editActivityName()" 
+                  class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-violet-500 hover:bg-violet-50 rounded-2xl transition-all">
+            <i class="fa-solid fa-pen text-sm"></i>
+          </button>
+        </div>
+        <div id="activity-date-row" class="hidden mt-2">
+          <button type="button" onclick="showEditDatesModal()"
+                  class="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-500 hover:text-violet-600 transition-colors text-left">
+            <span class="inline-flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-days text-violet-500 text-xs"></i>
+              <span id="activity-date-display" class="font-medium"></span>
+            </span>
+            <span id="activity-date-kind-badge"></span>
+            <i class="fa-solid fa-pen text-[10px] text-slate-400"></i>
+          </button>
+        </div>
+        <button type="button" id="activity-date-add" onclick="showEditDatesModal()"
+                class="hidden mt-1.5 text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1">
+          <i class="fa-solid fa-plus text-[10px]"></i>
+          <span>加入日期</span>
+        </button>
+      </div>
+
+      <!-- Local data notice -->
+      <div id="local-data-notice" class="mb-4 px-4 py-3 rounded-2xl bg-violet-50 border border-violet-100 flex gap-2.5 items-start">
+        <i class="fa-solid fa-mobile-screen text-violet-500 text-sm mt-0.5 shrink-0"></i>
+        <p class="flex-1 text-xs leading-relaxed text-violet-700">
+          呢個 app 資料只存在你自己部電話/電腦入面，唔會即時 share 畀其他人。
+          想同朋友一齊記帳？撳右上角「<span class="font-semibold">匯出活動</span>」複製記帳資料 send 畀佢哋，佢哋喺活動列表用「<span class="font-semibold">匯入活動</span>」貼返入去。
+        </p>
+        <button type="button" onclick="dismissLocalDataNotice()" aria-label="關閉提示"
+                class="w-6 h-6 -mr-1 -mt-0.5 shrink-0 flex items-center justify-center text-violet-400 hover:text-violet-700 hover:bg-violet-100 rounded-lg transition-colors">
+          <i class="fa-solid fa-times text-sm"></i>
+        </button>
+      </div>
+
+      <!-- 阿公餘額（每個活動獨立） -->
+      <div onclick="showFundManagerModal()" 
+           class="hk-card mb-5 p-4 border border-violet-100 bg-gradient-to-r from-violet-50 to-white cursor-pointer active:scale-[0.985] transition-all">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-x-2 text-violet-600">
+              <i class="fa-solid fa-coins"></i>
+              <span class="font-semibold text-sm">阿公（公數）</span>
+            </div>
+            <div id="fund-balance-detail" class="text-3xl font-bold tabular-nums text-violet-700 mt-0.5">HK$0.00</div>
+          </div>
+          <div class="text-right">
+            <div class="text-xs text-violet-600 font-medium">點擊管理</div>
+            <div class="text-[10px] text-violet-500">存入 / 提取 / 結算轉入</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Participants -->
+      <div class="hk-card p-5 mb-5 border border-slate-100">
+        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
+          <div class="section-title flex items-center gap-2 min-w-0">
+            <i class="fa-solid fa-user-friends shrink-0"></i>
+            <span>參加者 <span id="participant-count" class="font-mono text-xs bg-white px-1.5 py-px rounded">0</span></span>
+          </div>
+          <button onclick="clearAllExpenses()" 
+                  class="shrink-0 whitespace-nowrap text-xs font-medium text-slate-500 hover:text-red-500 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
+            <i class="fa-solid fa-eraser text-xs"></i>
+            <span>清空開支</span>
+          </button>
+        </div>
+        
+        <!-- Participants badges -->
+        <div id="participants-list" class="flex flex-wrap gap-2 min-h-[42px]">
+          <!-- Populated by JS -->
+        </div>
+        
+        <!-- Add participant -->
+        <div class="mt-3 flex gap-2 min-w-0">
+          <input id="new-participant-input" type="text" placeholder="朋友名字，例如：阿華" 
+                 class="flex-1 min-w-0 px-4 h-10 text-sm border border-slate-200 focus:border-violet-400 focus:ring-1 focus:ring-violet-200 rounded-2xl outline-none"
+                 onkeydown="if(event.key==='Enter') addParticipant()">
+          <button onclick="addParticipant()" 
+                  class="shrink-0 whitespace-nowrap px-4 h-10 bg-slate-800 hover:bg-black text-white rounded-2xl text-sm font-semibold transition-colors">
+            加入
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+        <!-- 總開支：手機獨佔一行 -->
+        <div class="hk-card px-3 sm:px-4 py-3 border border-slate-100 col-span-2 sm:col-span-1">
+          <div class="text-xs text-slate-500">總開支</div>
+          <div id="stat-total" class="text-xl sm:text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">HK$0</div>
+        </div>
+        <div class="hk-card px-4 py-3 border border-slate-100">
+          <div class="text-xs text-slate-500">開支筆數</div>
+          <div id="stat-count" class="text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">0</div>
+        </div>
+        <div class="hk-card px-4 py-3 border border-slate-100">
+          <div class="text-xs text-slate-500">參加人數</div>
+          <div id="stat-people" class="text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">0</div>
+        </div>
+      </div>
+
+      <!-- Main content: Form + List -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:items-stretch">
+        
+        <!-- Add Expense Form -->
+        <div class="flex flex-col min-h-0">
+          <div class="hk-card p-5 border border-slate-100 flex-1 flex flex-col">
+            <div class="section-title mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-receipt"></i>
+              <span id="expense-form-title">新增開支</span>
+            </div>
+            
+            <form id="expense-form" onsubmit="handleExpenseSubmit(event)">
+              <!-- Payer -->
+              <div class="mb-3">
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5">誰俾錢？</label>
+                <select id="payer-select" required
+                        class="w-full h-11 px-4 border border-slate-200 rounded-2xl text-sm bg-white focus:border-violet-400 outline-none">
+                  <!-- options populated by JS -->
+                </select>
+              </div>
+              
+              <!-- Description -->
+              <div class="mb-3">
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5">項目名稱</label>
+                <input id="expense-desc" type="text" required placeholder="例如：食飯 / 唱K / 買水"
+                       class="w-full h-11 px-4 border border-slate-200 rounded-2xl text-sm focus:border-violet-400 outline-none">
+              </div>
+              
+              <!-- Amount -->
+              <div class="mb-3">
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5">金額（HKD）</label>
+                <div class="relative">
+                  <div class="absolute left-4 top-1/2 -mt-2 text-slate-400 font-medium">$</div>
+                  <input id="expense-amount" type="number" step="0.01" min="0.01" required placeholder="0.00"
+                         class="w-full h-11 pl-8 pr-4 border border-slate-200 rounded-2xl text-sm focus:border-violet-400 outline-none"
+                         oninput="syncFundMaxHint()">
+                </div>
+              </div>
+
+              <!-- 阿公墊支 -->
+              <div class="mb-3">
+                <label class="block text-xs font-semibold text-violet-700 mb-1.5 flex items-center gap-1.5">
+                  <i class="fa-solid fa-coins"></i>
+                  <span>用阿公墊支（選填）</span>
+                </label>
+                <div class="flex gap-2 items-center">
+                  <div class="relative flex-1">
+                    <div class="absolute left-4 top-1/2 -mt-2 text-violet-500 font-medium">$</div>
+                    <input id="fund-paid" type="number" step="0.01" min="0" value="0"
+                           class="w-full h-11 pl-8 pr-4 border border-violet-200 focus:border-violet-400 rounded-2xl text-sm outline-none"
+                           oninput="syncFundMaxHint()">
+                  </div>
+                  <div id="fund-paid-hint" class="text-[10px] text-violet-600 font-medium whitespace-nowrap min-w-[72px] text-right">餘額充足</div>
+                </div>
+                <div class="text-[10px] text-violet-600/70 mt-0.5">阿公即時扣數，剩低金額由參加者分</div>
+              </div>
+              
+              <!-- Split -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="block text-xs font-semibold text-slate-600">呢筆錢分俾邊啲人？</label>
+                  <div class="flex gap-1">
+                    <button type="button" onclick="selectAllSplit(true)"
+                            class="text-[10px] px-2.5 h-6 rounded-xl bg-violet-100 text-violet-700 font-medium active:bg-violet-200">全選</button>
+                    <button type="button" onclick="selectAllSplit(false)"
+                            class="text-[10px] px-2.5 h-6 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">取消</button>
+                  </div>
+                </div>
+                
+                <div id="split-options" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100 min-h-[80px]">
+                  <!-- Checkboxes populated by JS -->
+                </div>
+              </div>
+              
+              <div class="flex gap-2 mt-4">
+                <button type="button" onclick="cancelExpenseEdit()" id="cancel-edit-btn"
+                        class="hidden flex-1 h-11 text-sm font-semibold border border-slate-200 hover:bg-slate-50 rounded-2xl active:bg-slate-100">
+                  取消
+                </button>
+                <button type="submit" id="expense-submit-btn"
+                        class="flex-1 h-11 bg-violet-500 hover:bg-violet-600 active:bg-violet-700 transition-all text-white rounded-2xl text-sm font-bold shadow-sm">
+                  新增開支
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        
+        <!-- Expenses List -->
+        <div class="flex flex-col min-h-0">
+          <div class="hk-card p-5 border border-slate-100 flex-1 flex flex-col min-h-0">
+            <div class="flex items-center justify-between mb-3">
+              <div class="section-title flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list"></i>
+                <span>開支記錄 <span id="expenses-count-badge" class="font-mono text-xs ml-1 text-slate-400"></span></span>
+              </div>
+              <button onclick="loadDemoData()" 
+                      class="text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1 shrink-0">
+                <i class="fa-solid fa-magic"></i>
+                <span>載入範例</span>
+              </button>
+            </div>
+            
+            <div id="expenses-list" class="space-y-2.5 flex-1 min-h-0 overflow-auto pr-1 custom-scroll">
+              <!-- Populated by JS -->
+            </div>
+            
+            <div id="expenses-empty" class="hidden flex-1 flex flex-col items-center justify-center text-center py-8 border border-dashed border-slate-200 rounded-2xl">
+              <i class="fa-solid fa-receipt text-3xl text-slate-300"></i>
+              <p class="mt-2 text-sm text-slate-500">仲未有開支</p>
+              <p class="text-xs text-slate-400">喺左邊加入第一筆記錄</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settlement Section -->
+      <div class="mt-8">
+        <div class="mb-3 px-1">
+          <div class="section-title text-base flex items-center gap-2">
+            <i class="fa-solid fa-balance-scale text-violet-500"></i>
+            <span>結算結果</span>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- Personal Balances -->
+          <div class="hk-card border border-slate-100 p-5">
+            <div class="text-sm font-semibold text-slate-700 mb-3">每人結餘</div>
+            <div id="balances-list" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+            <div id="balances-empty" class="hidden text-sm text-slate-400 py-2">暫未有數據</div>
+
+            <button onclick="generateWhatsAppShare()" 
+                    class="w-full mt-4 flex items-center justify-center gap-2.5 h-12 bg-[#25D366] hover:bg-[#20bd5a] active:bg-[#1da851] text-white rounded-2xl text-sm font-bold shadow-md transition-all">
+              <i class="fa-brands fa-whatsapp text-xl"></i>
+              <span>生成 WhatsApp 分享文字</span>
+            </button>
+            <p class="text-[10px] text-center text-slate-400 mt-1.5">一鍵複製結算結果，send 畀朋友</p>
+          </div>
+          
+          <!-- Suggested Settlements + 阿公操作 -->
+          <div class="hk-card border border-slate-100 p-5">
+            <div class="text-sm font-semibold text-slate-700 mb-3">建議還款方案（最少轉帳）</div>
+            <div id="settlements-list" class="space-y-2">
+              <!-- Populated by JS -->
+            </div>
+            <div id="settlements-empty" class="hidden">
+              <div class="flex items-center gap-2 text-violet-600 bg-violet-50 border border-violet-100 px-4 h-12 rounded-2xl text-sm">
+                <i class="fa-solid fa-check-circle"></i>
+                <span class="font-medium">已經結清！大家兩清啦 🎉</span>
+              </div>
+            </div>
+
+            <!-- 阿公模式：逐條揀選轉入 -->
+            <div id="fund-transfer-controls" class="mt-4 pt-4 border-t border-slate-100 hidden">
+              <div class="flex items-center justify-between mb-2">
+                <div class="text-[10px] text-violet-700 font-medium">剔選想由阿公承擔嘅還款</div>
+                <div class="flex gap-1">
+                  <button type="button" onclick="selectAllFundTransfers(true)"
+                          class="text-[10px] px-2.5 h-6 rounded-xl bg-violet-100 text-violet-700 font-medium active:bg-violet-200">全選</button>
+                  <button type="button" onclick="selectAllFundTransfers(false)"
+                          class="text-[10px] px-2.5 h-6 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">取消</button>
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button onclick="markAsDirectlySettled()" 
+                        class="h-10 text-sm font-semibold border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors flex items-center justify-center gap-1.5">
+                  <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                  <span>完全結清（自己轉帳）</span>
+                </button>
+                <button id="transfer-selected-fund-btn" onclick="transferSelectedSettlementsToFund()" 
+                        class="min-h-10 py-2 text-sm font-bold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white rounded-2xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <i class="fa-solid fa-coins shrink-0 text-base leading-none"></i>
+                  <span class="text-center leading-tight">
+                    <span class="block">轉入已選項目去阿公</span>
+                    <span id="transfer-selected-fund-amount" class="block text-[10px] font-semibold opacity-90 tabular-nums min-h-[14px]">&nbsp;</span>
+                  </span>
+                </button>
+              </div>
+              <div class="text-[10px] text-center text-violet-600 mt-1.5">可以逐條揀，淨係轉入已剔選嘅還款去阿公</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Person Breakdown -->
+        <div class="hk-card border border-slate-100 p-5 mt-4">
+          <div class="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
+            <i class="fa-solid fa-table-list text-violet-500"></i>
+            <span>每人明細（已付 / 應付 / 結餘）</span>
+          </div>
+          <p class="text-[10px] text-slate-400 mb-3">結餘 = 已付 − 應付。正數代表應收，負數代表應俾其他人。</p>
+          <div id="person-breakdown-list" class="space-y-2">
+            <!-- Populated by JS -->
+          </div>
+          <div id="person-breakdown-empty" class="hidden text-sm text-slate-400 py-2">暫未有數據</div>
+        </div>
+        
+        <div class="text-[10px] text-center text-slate-400 mt-3">
+          資料只儲存喺你嘅瀏覽器（localStorage）。關閉頁面後仍然存在。
+          <button type="button" onclick="showBugReportModal()" class="block mx-auto mt-1 text-amber-600 hover:text-amber-700 font-medium">
+            <i class="fa-solid fa-bug mr-0.5"></i>覺得計錯數？報告問題
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Activity Modal -->
+  <div id="create-modal" onclick="if (event.target.id === 'create-modal') hideCreateModal()" 
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="modal-sheet w-full sm:w-[440px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+      <div class="flex justify-between items-center mb-5">
+        <div class="font-bold text-xl">建立新活動</div>
+        <button onclick="hideCreateModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold mb-1.5 text-slate-600">活動名稱</label>
+        <input id="modal-activity-name" type="text" placeholder="例如：週五唱K + 食飯" 
+               class="w-full border border-slate-200 focus:border-violet-400 h-12 rounded-2xl px-4 text-base outline-none">
+        <p class="text-xs text-slate-500 mt-1.5">之後可以隨時改名同加入朋友</p>
+      </div>
+
+      <div class="mt-5">
+        <label class="block text-sm font-semibold mb-2 text-slate-600">日期 <span class="font-normal text-slate-400">（預設今日）</span></label>
+        <div class="date-fields-row grid grid-cols-2 gap-2 sm:gap-3">
+          <div class="date-field-group min-w-0">
+            <div class="text-[10px] text-slate-400 px-0.5">開始</div>
+            <input id="modal-date-start" type="date" class="date-input">
+          </div>
+          <div class="date-field-group min-w-0">
+            <div class="text-[10px] text-slate-400 px-0.5">結束</div>
+            <input id="modal-date-end" type="date" class="date-input">
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-2">預設今日，可改。跨多日會自動顯示為外遊。</p>
+      </div>
+      
+      <div class="mt-6 flex gap-3">
+        <button onclick="hideCreateModal()" 
+                class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+        <button onclick="createActivityFromModal()" 
+                class="flex-1 h-12 bg-violet-500 hover:bg-violet-600 active:bg-violet-700 text-white rounded-2xl font-bold text-sm transition-all">建立活動</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Activity Dates Modal -->
+  <div id="edit-dates-modal" onclick="if (event.target.id === 'edit-dates-modal') hideEditDatesModal()" 
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="modal-sheet w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-2xl">
+      <div class="flex justify-between items-center mb-5 shrink-0">
+        <div class="font-bold text-xl">活動日期</div>
+        <button onclick="hideEditDatesModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+      </div>
+
+      <div class="date-fields-row grid grid-cols-2 gap-2 sm:gap-3">
+        <div class="date-field-group min-w-0">
+          <div class="text-[10px] text-slate-400 px-0.5">開始</div>
+          <input id="edit-date-start" type="date" class="date-input">
+        </div>
+        <div class="date-field-group min-w-0">
+          <div class="text-[10px] text-slate-400 px-0.5">結束</div>
+          <input id="edit-date-end" type="date" class="date-input">
+        </div>
+      </div>
+      <p class="text-[10px] text-slate-400 mt-4">只填開始 = 單日活動。跨多日 = 外遊。</p>
+
+      <div class="mt-6 pt-2 border-t border-slate-100 flex flex-col gap-2 shrink-0">
+        <button onclick="saveActivityDates()" 
+                class="w-full h-12 bg-violet-500 hover:bg-violet-600 text-white rounded-2xl font-bold text-sm">儲存</button>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="hideEditDatesModal()" 
+                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+          <button onclick="clearActivityDates()" 
+                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm text-slate-500">清除</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 阿公管理 Modal -->
+  <div id="fund-modal" onclick="if (event.target.id === 'fund-modal') hideFundManagerModal()" 
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="w-full sm:w-[460px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+      
+      <div class="flex justify-between items-start mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-coins text-violet-500 text-xl"></i>
+            <div class="font-bold text-xl">阿公</div>
+          </div>
+          <div class="text-xs text-violet-600">呢個活動嘅共同錢包（公數）</div>
+        </div>
+        <button onclick="hideFundManagerModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+      </div>
+
+      <!-- Big Balance -->
+      <div class="hk-card bg-violet-50 border-violet-100 p-5 mb-5 text-center">
+        <div class="text-xs font-semibold text-violet-600 tracking-wider">目前餘額</div>
+        <div id="fund-modal-balance" class="text-4xl font-bold tabular-nums text-violet-700 mt-1">HK$0.00</div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+        <!-- 存入 (綠色系) -->
+        <div>
+          <div class="text-sm font-semibold text-violet-700 mb-2 flex items-center gap-1">
+            <i class="fa-solid fa-arrow-down"></i> 存入阿公
+          </div>
+
+          <!-- 輸入框 - 獨立全寬，與提取側一致 -->
+          <div class="mb-3">
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -mt-2 text-violet-500">$</div>
+              <input id="fund-deposit-input" type="number" step="0.01" min="0" placeholder="輸入金額" 
+                     class="w-full h-11 pl-8 pr-4 border border-violet-200 focus:border-violet-400 rounded-2xl text-base outline-none">
+            </div>
+          </div>
+
+          <!-- 快速按鈕 - 一行排列，與提取側一致 -->
+          <div class="grid grid-cols-4 gap-2 mb-4">
+            <button onclick="quickAdjustFund(50)" 
+                    class="py-2 text-sm border border-violet-200 bg-white text-violet-600 rounded-2xl active:bg-violet-50 hover:bg-violet-50 transition-colors">
+              +50
+            </button>
+            <button onclick="quickAdjustFund(100)" 
+                    class="py-2 text-sm border border-violet-200 bg-white text-violet-600 rounded-2xl active:bg-violet-50 hover:bg-violet-50 transition-colors">
+              +100
+            </button>
+            <button onclick="quickAdjustFund(200)" 
+                    class="py-2 text-sm border border-violet-200 bg-white text-violet-600 rounded-2xl active:bg-violet-50 hover:bg-violet-50 transition-colors">
+              +200
+            </button>
+            <button onclick="quickAdjustFund(500)" 
+                    class="py-2 text-sm border border-violet-200 bg-white text-violet-600 rounded-2xl active:bg-violet-50 hover:bg-violet-50 transition-colors">
+              +500
+            </button>
+          </div>
+
+          <!-- 大綠色「存入」按鈕 - 全寬、與提取側同高度 -->
+          <button onclick="depositFromInput()" 
+                  class="w-full h-12 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white rounded-2xl text-sm font-bold shadow-sm transition-all">
+            存入
+          </button>
+        </div>
+
+        <!-- 提取 (紅色系，還原對比) -->
+        <div>
+          <div class="text-sm font-semibold text-rose-600 mb-2 flex items-center gap-1">
+            <i class="fa-solid fa-arrow-up"></i> 提取阿公
+          </div>
+
+          <!-- 輸入框 - 獨立全寬，與存入側一致 -->
+          <div class="mb-3">
+            <div class="relative">
+              <div class="absolute left-3 top-1/2 -mt-2 text-rose-500">$</div>
+              <input id="fund-withdraw-input" type="number" step="0.01" min="0" placeholder="輸入金額" 
+                     class="w-full h-11 pl-8 pr-4 border border-rose-200 focus:border-rose-400 rounded-2xl text-base outline-none">
+            </div>
+          </div>
+
+          <!-- 快速按鈕 - 一行排列，與存入側一致 -->
+          <div class="grid grid-cols-3 gap-2 mb-4">
+            <button onclick="quickAdjustFund(-50)" 
+                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+              -50
+            </button>
+            <button onclick="quickAdjustFund(-100)" 
+                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+              -100
+            </button>
+            <button onclick="quickAdjustFund(-200)" 
+                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+              -200
+            </button>
+          </div>
+
+          <!-- 大紅色「提取」按鈕 - 全寬、與存入側同高度 -->
+          <button onclick="withdrawFromInput()" 
+                  class="w-full h-12 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-2xl text-sm font-bold shadow-sm transition-all">
+            提取
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-5 text-[10px] text-center text-slate-400 leading-tight">
+        阿公可以用嚟墊支開支、儲低結算錢，或者大家留低嘅共同儲備。每個活動有自己嘅阿公，唔會同其他活動混埋。
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Activity Modal -->
+  <div id="import-activity-modal" onclick="if (event.target.id === 'import-activity-modal') hideImportActivityModal()" 
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="w-full sm:w-[520px] max-h-[90vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-xl">
+      
+      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-slate-100">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-file-import text-violet-500 text-xl"></i>
+              <div class="font-bold text-xl">匯入活動</div>
+            </div>
+            <div class="text-xs text-slate-500 mt-1">貼上朋友複製畀你嗰段文字，或者揀佢 WhatsApp 傳嚟嘅檔案</div>
+          </div>
+          <button onclick="hideImportActivityModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+        </div>
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-y-auto px-6 sm:px-7 py-4 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-600 mb-1.5">記帳資料</label>
+          <textarea id="import-activity-json" rows="6" placeholder="長撳貼上朋友 send 嗰大段文字…"
+                    oninput="previewImportActivity()"
+                    class="w-full px-4 py-3 border border-slate-200 focus:border-violet-400 rounded-2xl text-xs outline-none resize-none font-mono"></textarea>
+        </div>
+
+        <div>
+          <input id="import-activity-file" type="file" accept=".json,application/json" class="hidden" onchange="loadImportActivityFile(event)">
+          <button type="button" onclick="document.getElementById('import-activity-file').click()"
+                  class="w-full h-11 border border-dashed border-slate-300 hover:border-violet-300 hover:bg-violet-50/50 rounded-2xl text-sm font-medium text-slate-600 transition-colors">
+            <i class="fa-solid fa-folder-open mr-1.5"></i>揀朋友傳嚟嘅檔案
+          </button>
+        </div>
+
+        <div id="import-activity-preview-wrap" class="hidden px-3 py-2.5 rounded-2xl bg-violet-50 border border-violet-100 text-xs text-violet-800 leading-relaxed">
+          <div id="import-activity-preview"></div>
+        </div>
+
+        <div id="import-activity-conflict-wrap" class="hidden px-3 py-2.5 rounded-2xl bg-amber-50 border border-amber-100 text-xs text-amber-800 leading-relaxed">
+          <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+          <span id="import-activity-conflict-text"></span>
+        </div>
+
+        <div class="px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-600 leading-relaxed">
+          <i class="fa-solid fa-circle-info mr-1 text-slate-400"></i>
+          匯入會連埋活動嘅阿公餘額一齊更新。要同步最新版，請用「覆蓋現有活動」。
+        </div>
+      </div>
+
+      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
+        <button onclick="hideImportActivityModal()" 
+                class="sm:flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+        <button id="import-activity-new-btn" onclick="confirmImportActivity('new')" disabled
+                class="sm:flex-1 h-12 bg-violet-500 hover:bg-violet-600 active:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all">
+          匯入為新活動
+        </button>
+        <button id="import-activity-replace-btn" onclick="confirmImportActivity('replace')" disabled
+                class="hidden sm:flex-1 h-12 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all">
+          覆蓋現有活動
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bug Report Modal -->
+  <div id="bug-report-modal" onclick="if (event.target.id === 'bug-report-modal') hideBugReportModal()" 
+       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+    <div onclick="event.stopImmediatePropagation()" 
+         class="w-full sm:w-[520px] max-h-[90vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-xl">
+      
+      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-slate-100">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-bug text-amber-500 text-xl"></i>
+              <div class="font-bold text-xl">報告問題</div>
+            </div>
+            <div class="text-xs text-slate-500 mt-1">描述你覺得邊度計錯，系統會自動附上數據方便排查</div>
+          </div>
+          <button onclick="hideBugReportModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+        </div>
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-y-auto px-6 sm:px-7 py-4 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-600 mb-1.5">問題描述（必填）</label>
+          <textarea id="bug-report-desc" rows="3" placeholder="例如：小美應收 $50 但顯示 $48.33，好似分錢計錯咗"
+                    class="w-full px-4 py-3 border border-slate-200 focus:border-amber-400 rounded-2xl text-sm outline-none resize-none"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-slate-600 mb-1.5">聯絡方式（選填）</label>
+          <input id="bug-report-contact" type="text" placeholder="例如：WhatsApp / Telegram 名"
+                 class="w-full h-11 px-4 border border-slate-200 focus:border-amber-400 rounded-2xl text-sm outline-none">
+        </div>
+
+        <div class="px-3 py-2.5 rounded-2xl bg-amber-50 border border-amber-100 text-xs text-amber-800 leading-relaxed">
+          <i class="fa-solid fa-shield-halved mr-1"></i>
+          報告會包含活動、開支、結算結果同裝置資訊，<span class="font-semibold">唔會</span>自動傳送出去 — 只會複製到剪貼簿，你再 paste 畀開發者 (Nik)。
+        </div>
+
+        <div id="bug-report-preview-wrap" class="hidden">
+          <label class="block text-sm font-semibold text-slate-600 mb-1.5">報告預覽</label>
+          <pre id="bug-report-preview" class="text-[10px] leading-relaxed bg-slate-50 border border-slate-200 rounded-2xl p-3 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-slate-600"></pre>
+        </div>
+      </div>
+
+      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-slate-100 flex gap-3">
+        <button onclick="hideBugReportModal()" 
+                class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+        <button onclick="generateAndCopyBugReport()" 
+                class="flex-1 h-12 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+          <i class="fa-solid fa-copy"></i>
+          <span>生成並複製報告</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center"></div>
+
+  <script>
+    // ==================== State ====================
+    let activities = [];
+    let currentActivityId = null;
+    let editingExpenseId = null;
+
+    const STORAGE_KEY = 'sansuanzi_activities';
+    const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
+    const APP_VERSION = '1.0.0';
+    const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
+    const ACTIVITY_EXPORT_VERSION = 1;
+    let pendingImportActivity = null;
+
+    // ==================== Storage ====================
+    function loadFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          activities = JSON.parse(raw);
+          activities.forEach(act => {
+            ensureFundTransfers(act);
+            ensureActivityDates(act);
+            ensureFundBalance(act);
+          });
+        }
+      } catch (e) {
+        console.warn('Failed to load from storage', e);
+        activities = [];
+      }
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(activities));
+      } catch (e) {
+        console.warn('Failed to save to storage', e);
+      }
+    }
+
+    // ==================== 阿公（每個活動獨立） ====================
+    function ensureFundBalance(act) {
+      if (!act) return 0;
+      if (typeof act.fundBalance !== 'number' || Number.isNaN(act.fundBalance)) {
+        act.fundBalance = 0;
+      }
+      return act.fundBalance;
+    }
+
+    function getFundBalance() {
+      const act = getCurrentActivity();
+      return act ? ensureFundBalance(act) : 0;
+    }
+
+    function setFundBalance(value) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      act.fundBalance = Math.max(0, Math.round(value * 100) / 100);
+      act.updatedAt = Date.now();
+      saveToStorage();
+    }
+
+    function updateFundDisplays() {
+      const formatted = formatMoney(getFundBalance());
+      const headerVal = document.getElementById('fund-balance-header');
+      if (headerVal) headerVal.textContent = formatted;
+      const detailVal = document.getElementById('fund-balance-detail');
+      if (detailVal) detailVal.textContent = formatted;
+      const modalVal = document.getElementById('fund-modal-balance');
+      if (modalVal) modalVal.textContent = formatted;
+    }
+
+    function updateHeaderFundVisibility() {
+      const btn = document.getElementById('header-fund-btn');
+      if (!btn) return;
+      const inDetail = !document.getElementById('view-detail')?.classList.contains('hidden');
+      btn.classList.toggle('hidden', !inDetail);
+      btn.classList.toggle('flex', inDetail);
+    }
+
+    let openModalCount = 0;
+
+    function lockBodyScroll() {
+      openModalCount++;
+      document.body.classList.add('modal-open');
+    }
+
+    function unlockBodyScroll() {
+      openModalCount = Math.max(0, openModalCount - 1);
+      if (openModalCount === 0) document.body.classList.remove('modal-open');
+    }
+
+    function showFundManagerModal() {
+      const modal = document.getElementById('fund-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lockBodyScroll();
+      updateFundDisplays();
+      // focus first input
+      setTimeout(() => {
+        const depositInput = document.getElementById('fund-deposit-input');
+        if (depositInput) depositInput.focus();
+      }, 80);
+    }
+
+    function hideFundManagerModal() {
+      const modal = document.getElementById('fund-modal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        unlockBodyScroll();
+      }
+    }
+
+    function adjustFund(amount, type) {
+      const act = getCurrentActivity();
+      if (!act) {
+        showToast('請先揀一個活動', 'error');
+        return;
+      }
+      let balance = ensureFundBalance(act);
+      if (type === 'deposit') {
+        balance += amount;
+      } else {
+        if (amount > balance + 0.005) {
+          showToast('阿公餘額唔夠提取', 'error');
+          return;
+        }
+        balance -= amount;
+      }
+      setFundBalance(balance);
+      updateFundDisplays();
+      showToast(`${type === 'deposit' ? '已存入阿公' : '已從阿公提取'} ${formatMoney(amount)}`);
+    }
+
+    function quickAdjustFund(delta) {
+      if (delta > 0) {
+        adjustFund(delta, 'deposit');
+      } else {
+        adjustFund(-delta, 'withdraw');
+      }
+    }
+
+    function depositFromInput() {
+      const input = document.getElementById('fund-deposit-input');
+      const val = parseFloat(input.value);
+      if (!val || val <= 0) {
+        showToast('請輸入有效金額', 'error');
+        return;
+      }
+      adjustFund(val, 'deposit');
+      input.value = '';
+    }
+
+    function withdrawFromInput() {
+      const input = document.getElementById('fund-withdraw-input');
+      const val = parseFloat(input.value);
+      if (!val || val <= 0) {
+        showToast('請輸入有效金額', 'error');
+        return;
+      }
+      adjustFund(val, 'withdraw');
+      input.value = '';
+    }
+
+    // ==================== Helpers ====================
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const colors = type === 'error' 
+        ? 'bg-red-600 text-white' 
+        : 'bg-slate-900 text-white';
+      
+      const toast = document.createElement('div');
+      toast.className = `${colors} px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-sm font-medium animate-[fadeIn_0.1s]`;
+      toast.innerHTML = `
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transition = 'all 0.2s ease';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 180);
+      }, 2400);
+    }
+
+    function formatMoney(amount) {
+      const n = Number(amount) || 0;
+      return 'HK$' + n.toLocaleString('en-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getCurrentActivity() {
+      return activities.find(a => a.id === currentActivityId);
+    }
+
+    function generateId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    }
+
+    // ==================== Activity Dates ====================
+    function ensureActivityDates(act) {
+      if (!act) return;
+      if (act.dateStart === undefined) act.dateStart = null;
+      if (act.dateEnd === undefined) act.dateEnd = null;
+    }
+
+    function normalizeActivityDates(dateStart, dateEnd) {
+      const start = (dateStart || '').trim() || null;
+      let end = (dateEnd || '').trim() || null;
+      if (!start && end) return { dateStart: end, dateEnd: end };
+      if (!start) return { dateStart: null, dateEnd: null };
+      if (!end || end < start) end = start;
+      return { dateStart: start, dateEnd: end };
+    }
+
+    function parseISODateLocal(iso) {
+      if (!iso) return null;
+      const [y, m, d] = iso.split('-').map(Number);
+      if (!y || !m || !d) return null;
+      return new Date(y, m - 1, d);
+    }
+
+    function getActivityDayCount(act) {
+      if (!act?.dateStart) return 0;
+      const start = parseISODateLocal(act.dateStart);
+      const end = parseISODateLocal(act.dateEnd || act.dateStart);
+      if (!start || !end) return 0;
+      const diff = Math.round((end - start) / 86400000);
+      return diff + 1;
+    }
+
+    function formatShortDate(date) {
+      return date.toLocaleDateString('zh-HK', { month: 'long', day: 'numeric' });
+    }
+
+    function formatActivityDateRange(act) {
+      if (!act?.dateStart) return null;
+      const start = parseISODateLocal(act.dateStart);
+      const end = parseISODateLocal(act.dateEnd || act.dateStart);
+      if (!start || !end) return null;
+
+      const sameYear = start.getFullYear() === end.getFullYear();
+      const sameDay = act.dateStart === (act.dateEnd || act.dateStart);
+
+      if (sameDay) {
+        return start.toLocaleDateString('zh-HK', { year: 'numeric', month: 'long', day: 'numeric' });
+      }
+
+      const startStr = sameYear
+        ? formatShortDate(start)
+        : start.toLocaleDateString('zh-HK', { year: 'numeric', month: 'long', day: 'numeric' });
+      const endStr = end.toLocaleDateString('zh-HK', { year: 'numeric', month: 'long', day: 'numeric' });
+      return `${startStr} – ${endStr}`;
+    }
+
+    function getActivityDateKind(act) {
+      const days = getActivityDayCount(act);
+      if (days <= 0) return null;
+      if (days === 1) return { label: '單日', className: 'bg-slate-100 text-slate-600' };
+      return { label: `外遊 · ${days}日`, className: 'bg-sky-100 text-sky-700' };
+    }
+
+    function renderActivityDateKindBadge(act, size = 'sm') {
+      const kind = getActivityDateKind(act);
+      if (!kind) return '';
+      const sizeClass = size === 'xs' ? 'text-[9px] px-1.5 py-px' : 'text-[10px] px-2 py-0.5';
+      return `<span class="inline-flex items-center rounded-lg font-semibold ${sizeClass} ${kind.className}">${kind.label}</span>`;
+    }
+
+    function getTodayISODate() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function resetCreateModalDates() {
+      const today = getTodayISODate();
+      const start = document.getElementById('modal-date-start');
+      const end = document.getElementById('modal-date-end');
+      if (start) start.value = today;
+      if (end) end.value = today;
+    }
+
+    function readCreateModalDates() {
+      const start = document.getElementById('modal-date-start');
+      const end = document.getElementById('modal-date-end');
+      return normalizeActivityDates(start?.value, end?.value);
+    }
+
+    function showEditDatesModal() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const modal = document.getElementById('edit-dates-modal');
+      const start = document.getElementById('edit-date-start');
+      const end = document.getElementById('edit-date-end');
+      if (!modal || !start || !end) return;
+
+      const today = getTodayISODate();
+      start.value = act.dateStart || today;
+      end.value = act.dateEnd || act.dateStart || today;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lockBodyScroll();
+    }
+
+    function hideEditDatesModal() {
+      const modal = document.getElementById('edit-dates-modal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        unlockBodyScroll();
+      }
+    }
+
+    function saveActivityDates() {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const start = document.getElementById('edit-date-start');
+      const end = document.getElementById('edit-date-end');
+      const normalized = normalizeActivityDates(start?.value, end?.value);
+
+      act.dateStart = normalized.dateStart;
+      act.dateEnd = normalized.dateEnd;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      hideEditDatesModal();
+      renderActivityDateDisplay();
+      renderActivitiesList();
+      showToast(act.dateStart ? '日期已更新' : '已清除日期');
+    }
+
+    function clearActivityDates() {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      act.dateStart = null;
+      act.dateEnd = null;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      hideEditDatesModal();
+      renderActivityDateDisplay();
+      renderActivitiesList();
+      showToast('已清除日期');
+    }
+
+    function renderActivityDateDisplay() {
+      const act = getCurrentActivity();
+      const row = document.getElementById('activity-date-row');
+      const addBtn = document.getElementById('activity-date-add');
+      const display = document.getElementById('activity-date-display');
+      const badge = document.getElementById('activity-date-kind-badge');
+      if (!act || !row || !addBtn || !display || !badge) return;
+
+      const range = formatActivityDateRange(act);
+      if (range) {
+        row.classList.remove('hidden');
+        addBtn.classList.add('hidden');
+        display.textContent = range;
+        badge.innerHTML = renderActivityDateKindBadge(act);
+      } else {
+        row.classList.add('hidden');
+        addBtn.classList.remove('hidden');
+        display.textContent = '';
+        badge.innerHTML = '';
+      }
+    }
+
+    // ==================== View Switching ====================
+    function showActivitiesView() {
+      document.getElementById('view-activities').classList.remove('hidden');
+      document.getElementById('view-detail').classList.add('hidden');
+      updateHeaderFundVisibility();
+      renderActivitiesList();
+    }
+
+    function showDetailView() {
+      document.getElementById('view-activities').classList.add('hidden');
+      document.getElementById('view-detail').classList.remove('hidden');
+      updateHeaderFundVisibility();
+      updateLocalDataNoticeVisibility();
+      renderDetail();
+      updateFundDisplays();
+    }
+
+    function isLocalDataNoticeDismissed() {
+      try {
+        return localStorage.getItem(LOCAL_NOTICE_KEY) === '1';
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function updateLocalDataNoticeVisibility() {
+      const notice = document.getElementById('local-data-notice');
+      if (!notice) return;
+      notice.classList.toggle('hidden', isLocalDataNoticeDismissed());
+    }
+
+    function dismissLocalDataNotice() {
+      try {
+        localStorage.setItem(LOCAL_NOTICE_KEY, '1');
+      } catch (e) {
+        console.warn('Failed to save notice dismissal', e);
+      }
+      updateLocalDataNoticeVisibility();
+    }
+
+    function backToList() {
+      currentActivityId = null;
+      editingExpenseId = null;
+      showActivitiesView();
+    }
+
+    // ==================== Activities List ====================
+    function renderActivitiesList() {
+      const grid = document.getElementById('activities-grid');
+      const empty = document.getElementById('activities-empty');
+      
+      grid.innerHTML = '';
+      
+      if (activities.length === 0) {
+        empty.classList.remove('hidden');
+        grid.classList.add('hidden');
+        return;
+      }
+      
+      empty.classList.add('hidden');
+      grid.classList.remove('hidden');
+      
+      activities
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+        .forEach(activity => {
+          const total = activity.expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+          const people = new Set();
+          activity.expenses.forEach(e => {
+            people.add(e.payer);
+            e.splitWith.forEach(p => people.add(p));
+          });
+          activity.participants.forEach(p => people.add(p));
+          
+          const card = document.createElement('div');
+          card.className = 'hk-card border border-slate-100 p-4 cursor-pointer active:scale-[0.985] transition-all hover:border-violet-200';
+          card.onclick = () => selectActivity(activity.id);
+          
+          const dateRange = formatActivityDateRange(activity);
+          const dateKindBadge = renderActivityDateKindBadge(activity, 'xs');
+
+          card.innerHTML = `
+            <div class="flex justify-between items-start">
+              <div class="min-w-0 pr-3">
+                <div class="font-semibold text-lg leading-tight">${escapeHtml(activity.name)}</div>
+                ${dateRange ? `
+                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                  <i class="fa-solid fa-calendar-days text-violet-400 text-[10px]"></i>
+                  <span>${escapeHtml(dateRange)}</span>
+                  ${dateKindBadge}
+                </div>` : ''}
+              </div>
+              <button onclick="event.stopImmediatePropagation(); deleteActivity('${activity.id}');" 
+                      class="w-8 h-8 -mr-1 -mt-1 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shrink-0">
+                <i class="fa-solid fa-trash text-xs"></i>
+              </button>
+            </div>
+            
+            <div class="mt-4 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1 text-slate-500">
+                  <i class="fa-solid fa-users text-violet-400"></i>
+                  <span class="font-medium">${activity.participants.length}</span>
+                </div>
+                <div class="flex items-center gap-1 text-slate-500">
+                  <i class="fa-solid fa-receipt text-violet-400"></i>
+                  <span class="font-medium">${activity.expenses.length}</span>
+                </div>
+              </div>
+              <div class="font-semibold tabular-nums text-violet-600">${formatMoney(total)}</div>
+            </div>
+            
+            <div class="mt-2 flex items-center gap-1.5 text-[10px] text-violet-600/80">
+              <i class="fa-solid fa-coins text-[9px]"></i>
+              <span>阿公 ${formatMoney(ensureFundBalance(activity))}</span>
+            </div>
+            
+            <div class="mt-3 text-[10px] text-slate-400">
+              ${activity.expenses.length > 0 ? '最後更新：' + new Date(activity.updatedAt || Date.now()).toLocaleDateString('zh-HK') : '未有開支'}
+            </div>
+          `;
+          
+          grid.appendChild(card);
+        });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, s => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[s]));
+    }
+
+    function createQuickActivity() {
+      const input = document.getElementById('quick-create-input');
+      const name = input.value.trim() || '新活動';
+      const today = getTodayISODate();
+      createNewActivity(name, today, today);
+      input.value = '';
+    }
+
+    function showCreateActivityModal() {
+      const modal = document.getElementById('create-modal');
+      const input = document.getElementById('modal-activity-name');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lockBodyScroll();
+      input.value = '';
+      resetCreateModalDates();
+      setTimeout(() => input.focus(), 80);
+    }
+
+    function hideCreateModal() {
+      const modal = document.getElementById('create-modal');
+      modal.classList.remove('flex');
+      modal.classList.add('hidden');
+      unlockBodyScroll();
+    }
+
+    function createActivityFromModal() {
+      const input = document.getElementById('modal-activity-name');
+      const name = input.value.trim() || '新活動';
+      const dates = readCreateModalDates();
+      hideCreateModal();
+      createNewActivity(name, dates.dateStart, dates.dateEnd);
+    }
+
+    function createNewActivity(name, dateStart = null, dateEnd = null) {
+      const today = getTodayISODate();
+      const dates = normalizeActivityDates(dateStart || today, dateEnd || today);
+      const newAct = {
+        id: generateId(),
+        name: name,
+        dateStart: dates.dateStart,
+        dateEnd: dates.dateEnd,
+        participants: [],
+        expenses: [],
+        fundTransfers: [],
+        fundBalance: 0,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      activities.unshift(newAct);
+      saveToStorage();
+      selectActivity(newAct.id);
+      showToast('新活動已建立');
+    }
+
+    function selectActivity(id) {
+      currentActivityId = id;
+      editingExpenseId = null;
+      showDetailView();
+    }
+
+    function deleteActivity(id) {
+      if (!confirm('確定要刪除呢個活動？所有開支記錄都會消失。')) return;
+      
+      activities = activities.filter(a => a.id !== id);
+      saveToStorage();
+      
+      if (currentActivityId === id) {
+        currentActivityId = null;
+        showActivitiesView();
+      } else {
+        renderActivitiesList();
+      }
+      showToast('活動已刪除');
+    }
+
+    function deleteCurrentActivity() {
+      if (!currentActivityId) return;
+      if (!confirm('確定刪除整個活動？')) return;
+      
+      activities = activities.filter(a => a.id !== currentActivityId);
+      saveToStorage();
+      currentActivityId = null;
+      showActivitiesView();
+      showToast('活動已刪除');
+    }
+
+    function editActivityName() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const newName = prompt('輸入新活動名稱：', act.name);
+      if (newName === null) return;
+      
+      const trimmed = newName.trim();
+      if (!trimmed) return;
+      
+      act.name = trimmed;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      renderDetail();
+    }
+
+    // ==================== Participants ====================
+    function renderParticipants() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const container = document.getElementById('participants-list');
+      const countEl = document.getElementById('participant-count');
+      
+      container.innerHTML = '';
+      countEl.textContent = act.participants.length;
+      
+      if (act.participants.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'text-xs text-slate-400 italic px-1';
+        empty.textContent = '未有參加者，請喺下面加入朋友';
+        container.appendChild(empty);
+        return;
+      }
+      
+      act.participants.forEach(name => {
+        const badge = document.createElement('div');
+        badge.className = 'participant-badge inline-flex items-center gap-1.5 pl-3.5 pr-2 py-1 bg-violet-100 text-violet-700 rounded-2xl text-sm font-medium';
+        badge.innerHTML = `
+          <span>${escapeHtml(name)}</span>
+          <button class="w-5 h-5 flex items-center justify-center hover:bg-violet-200 rounded-xl text-violet-600" 
+                  onclick="event.stopImmediatePropagation(); removeParticipant('${escapeHtml(name)}')">
+            <i class="fa-solid fa-times text-xs"></i>
+          </button>
+        `;
+        container.appendChild(badge);
+      });
+    }
+
+    function addParticipant() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const input = document.getElementById('new-participant-input');
+      const name = input.value.trim();
+      
+      if (!name) {
+        showToast('請輸入朋友名字', 'error');
+        return;
+      }
+      
+      if (act.participants.includes(name)) {
+        showToast('呢個朋友已經喺名單入面', 'error');
+        return;
+      }
+      
+      act.participants.push(name);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      input.value = '';
+      renderParticipants();
+      renderPayerOptions();
+      renderSplitOptions();
+      renderStats();
+      showToast(`已加入 ${name}`);
+    }
+
+    function removeParticipant(name) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      // Check if this person is involved in any expense
+      const involved = act.expenses.some(e => 
+        e.payer === name || e.splitWith.includes(name)
+      );
+      
+      if (involved) {
+        if (!confirm(`「${name}」有開支記錄，移除後歷史數據仍然會計算。確定移除？`)) return;
+      }
+      
+      act.participants = act.participants.filter(p => p !== name);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      renderParticipants();
+      renderPayerOptions();
+      renderSplitOptions();
+      renderDetail(); // full refresh to update balances
+    }
+
+    // ==================== Expense Form ====================
+    function renderPayerOptions() {
+      const act = getCurrentActivity();
+      const select = document.getElementById('payer-select');
+      if (!act || !select) return;
+      
+      const currentValue = select.value;
+      select.innerHTML = '<option value="">— 選擇俾錢人 —</option>';
+      
+      act.participants.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+      
+      // try restore previous selection if still valid
+      if (currentValue && act.participants.includes(currentValue)) {
+        select.value = currentValue;
+      }
+    }
+
+    function renderSplitOptions(selectedNames = null) {
+      const act = getCurrentActivity();
+      const container = document.getElementById('split-options');
+      if (!act || !container) return;
+      
+      container.innerHTML = '';
+      
+      if (act.participants.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'col-span-full px-3 py-2 text-xs text-slate-500 italic';
+        msg.textContent = '請先加入參加者';
+        container.appendChild(msg);
+        return;
+      }
+      
+      const toSelect = selectedNames || [...act.participants];
+      
+      act.participants.forEach(name => {
+        const isChecked = toSelect.includes(name);
+        
+        const wrapper = document.createElement('label');
+        wrapper.className = `flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border box-border ${isChecked ? 'bg-white border-violet-300' : 'bg-white border-slate-200 hover:bg-slate-100'} transition-colors`;
+        
+        wrapper.innerHTML = `
+          <input type="checkbox" value="${escapeHtml(name)}" ${isChecked ? 'checked' : ''} 
+                 class="w-4 h-4 accent-violet-500">
+          <span class="text-sm font-medium select-none">${escapeHtml(name)}</span>
+        `;
+        
+        const cb = wrapper.querySelector('input');
+        const syncSplitStyle = () => {
+          wrapper.classList.toggle('border-violet-300', cb.checked);
+          wrapper.classList.toggle('border-slate-200', !cb.checked);
+        };
+        cb.addEventListener('change', syncSplitStyle);
+        
+        container.appendChild(wrapper);
+      });
+    }
+
+    function selectAllSplit(checked) {
+      const container = document.getElementById('split-options');
+      const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        cb.checked = checked;
+        const label = cb.closest('label');
+        if (label) {
+          label.classList.toggle('border-violet-300', checked);
+          label.classList.toggle('border-slate-200', !checked);
+        }
+      });
+    }
+
+    function getSelectedSplit() {
+      const container = document.getElementById('split-options');
+      const checked = [];
+      container.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+        checked.push(cb.value);
+      });
+      return checked;
+    }
+
+    // 阿公墊支提示同步（即時驗證）
+    function syncFundMaxHint() {
+      const amountInput = document.getElementById('expense-amount');
+      const fundInput = document.getElementById('fund-paid');
+      const hint = document.getElementById('fund-paid-hint');
+      if (!amountInput || !fundInput || !hint) return;
+
+      const amount = parseFloat(amountInput.value) || 0;
+      const fundPaid = parseFloat(fundInput.value) || 0;
+
+      let msg = '';
+      let color = 'text-violet-600';
+
+      if (fundPaid > amount) {
+        msg = '不可超過金額';
+        color = 'text-red-500';
+      } else if (fundPaid > getFundBalance() + 0.005) {
+        msg = '阿公餘額唔夠';
+        color = 'text-red-500';
+      } else if (fundPaid > 0) {
+        msg = '阿公可用';
+        color = 'text-violet-600';
+      } else {
+        msg = '餘額充足';
+      }
+
+      hint.textContent = msg;
+      hint.className = `text-[10px] font-medium whitespace-nowrap min-w-[72px] text-right ${color}`;
+    }
+
+    function handleExpenseSubmit(e) {
+      e.preventDefault();
+      
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const payer = document.getElementById('payer-select').value;
+      const desc = document.getElementById('expense-desc').value.trim();
+      const amountStr = document.getElementById('expense-amount').value;
+      const splitWith = getSelectedSplit();
+      
+      if (!payer) {
+        showToast('請選擇誰俾錢', 'error');
+        return;
+      }
+      if (!desc) {
+        showToast('請輸入項目名稱', 'error');
+        return;
+      }
+      const amount = parseFloat(amountStr);
+      if (!amount || amount <= 0) {
+        showToast('請輸入有效金額', 'error');
+        return;
+      }
+      if (splitWith.length === 0) {
+        showToast('請至少選擇一個分錢的人', 'error');
+        return;
+      }
+      
+      // 阿公墊支金額
+      let fundPaid = parseFloat(document.getElementById('fund-paid').value) || 0;
+      fundPaid = Math.max(0, Math.min(fundPaid, amount, getFundBalance())); // 不可超過金額或基金餘額
+      
+      if (editingExpenseId) {
+        // Update existing
+        const exp = act.expenses.find(x => x.id === editingExpenseId);
+        if (exp) {
+          const oldFundPaid = Number(exp.fundPaid) || 0;
+          exp.payer = payer;
+          exp.description = desc;
+          exp.amount = amount;
+          exp.splitWith = splitWith;
+          exp.fundPaid = fundPaid;
+          
+          // 調整阿公餘額（編輯時的差額）
+          const delta = oldFundPaid - fundPaid;
+          setFundBalance(getFundBalance() + delta);
+          updateFundDisplays();
+        }
+        showToast('開支已更新');
+      } else {
+        // Add new
+        act.expenses.unshift({
+          id: generateId(),
+          payer,
+          description: desc,
+          amount,
+          splitWith,
+          fundPaid: fundPaid,
+          createdAt: Date.now()
+        });
+        
+        // 即時扣減基金餘額
+        if (fundPaid > 0) {
+          setFundBalance(getFundBalance() - fundPaid);
+          updateFundDisplays();
+        }
+        showToast('開支已新增' + (fundPaid > 0 ? `（阿公已墊 ${formatMoney(fundPaid)}）` : ''));
+      }
+      
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      // Reset form
+      cancelExpenseEdit();
+      renderDetail();
+    }
+
+    function editExpense(id) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const exp = act.expenses.find(e => e.id === id);
+      if (!exp) return;
+      
+      editingExpenseId = id;
+      
+      // Populate form
+      document.getElementById('payer-select').value = exp.payer;
+      document.getElementById('expense-desc').value = exp.description;
+      document.getElementById('expense-amount').value = exp.amount;
+      document.getElementById('fund-paid').value = Number(exp.fundPaid) || 0;
+      
+      // Render split with saved values
+      renderSplitOptions(exp.splitWith);
+      syncFundMaxHint(); // 更新基金提示
+      
+      // Update UI
+      document.getElementById('expense-form-title').textContent = '編輯開支';
+      document.getElementById('expense-submit-btn').textContent = '更新開支';
+      document.getElementById('cancel-edit-btn').classList.remove('hidden');
+      
+      // Scroll to form
+      document.getElementById('expense-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function cancelExpenseEdit() {
+      editingExpenseId = null;
+      
+      document.getElementById('expense-form').reset();
+      // 重置基金支付欄為 0
+      const fundInput = document.getElementById('fund-paid');
+      if (fundInput) fundInput.value = '0';
+      
+      document.getElementById('expense-form-title').textContent = '新增開支';
+      document.getElementById('expense-submit-btn').textContent = '新增開支';
+      document.getElementById('cancel-edit-btn').classList.add('hidden');
+      
+      const act = getCurrentActivity();
+      if (act) {
+        renderSplitOptions(); // reset to all checked
+      }
+      syncFundMaxHint();
+    }
+
+    function deleteExpense(id) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      if (!confirm('確定刪除這筆開支？')) return;
+      
+      act.expenses = act.expenses.filter(e => e.id !== id);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      if (editingExpenseId === id) {
+        cancelExpenseEdit();
+      }
+      
+      renderDetail();
+      showToast('開支已刪除');
+    }
+
+    function clearAllExpenses() {
+      const act = getCurrentActivity();
+      if (!act || act.expenses.length === 0) return;
+      
+      if (!confirm(`確定清空所有 ${act.expenses.length} 筆開支？`)) return;
+      
+      act.expenses = [];
+      act.fundTransfers = [];
+      act.updatedAt = Date.now();
+      saveToStorage();
+      cancelExpenseEdit();
+      renderDetail();
+      showToast('已清空所有開支');
+    }
+
+    // ==================== Rendering Expenses ====================
+    function renderExpenses() {
+      const act = getCurrentActivity();
+      const list = document.getElementById('expenses-list');
+      const empty = document.getElementById('expenses-empty');
+      const badge = document.getElementById('expenses-count-badge');
+      
+      if (!act) return;
+      
+      list.innerHTML = '';
+      
+      badge.textContent = act.expenses.length > 0 ? `(${act.expenses.length})` : '';
+      
+      if (act.expenses.length === 0) {
+        list.classList.add('hidden');
+        empty.classList.remove('hidden');
+        return;
+      }
+      list.classList.remove('hidden');
+      empty.classList.add('hidden');
+      
+      act.expenses.forEach(exp => {
+        const { fundPaid, amountToSplit, people, shares } = getExpenseSplitDetails(exp);
+        const payerShare = shares[exp.payer] || 0;
+        const payerInSplit = people.includes(exp.payer);
+        let payerLine = '';
+
+        if (amountToSplit > 0.005 && exp.payer) {
+          if (payerInSplit && payerShare > 0) {
+            const netAdvance = Math.round((amountToSplit - payerShare) * 100) / 100;
+            payerLine = `
+              <div class="mt-1.5 text-[10px] text-amber-800 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-xl leading-relaxed">
+                <i class="fa-solid fa-wallet mr-1 text-amber-500"></i>
+                <span class="font-medium">${escapeHtml(exp.payer)}</span> 已付 ${formatMoney(exp.amount)}，抵扣自己份 ${formatMoney(payerShare)}，淨幫墊 ${formatMoney(netAdvance)}
+              </div>`;
+          } else if (!payerInSplit) {
+            payerLine = `
+              <div class="mt-1.5 text-[10px] text-amber-800 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-xl leading-relaxed">
+                <i class="fa-solid fa-wallet mr-1 text-amber-500"></i>
+                <span class="font-medium">${escapeHtml(exp.payer)}</span> 已付 ${formatMoney(exp.amount)}，全額幫墊 ${formatMoney(amountToSplit)}（唔計自己份）
+              </div>`;
+          }
+        }
+
+        const splitLabel = amountToSplit <= 0.005
+          ? '阿公全額墊支，無需分帳'
+          : `分 ${people.length} 人 • ${formatSharesDisplay(shares, people)}`;
+
+        const card = document.createElement('div');
+        card.className = 'expense-card bg-slate-50 border border-slate-100 rounded-2xl p-3.5 flex gap-3 items-start';
+        
+        card.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-base leading-tight">${escapeHtml(exp.description)}</div>
+            
+            <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+              <div class="inline-flex items-center px-2.5 py-0.5 bg-amber-100 text-amber-700 rounded-xl font-medium">
+                <i class="fa-solid fa-user mr-1.5 text-amber-500"></i>
+                <span>${escapeHtml(exp.payer)} 俾</span>
+              </div>
+              
+              <div class="text-violet-600 font-medium tabular-nums">
+                ${formatMoney(exp.amount)}
+              </div>
+              ${fundPaid > 0.005 ? `
+              <div class="inline-flex items-center px-2 py-0.5 bg-violet-100 text-violet-700 rounded-xl text-[10px] font-medium">
+                <i class="fa-solid fa-coins mr-1"></i>
+                <span>阿公 ${formatMoney(fundPaid)}</span>
+              </div>` : ''}
+            </div>
+            
+            <div class="mt-1.5 text-xs text-slate-500 leading-relaxed">
+              ${amountToSplit > 0.005 ? `<span>分帳 ${formatMoney(amountToSplit)} • </span>` : ''}
+              <span class="font-medium">${splitLabel}</span>
+              <span class="text-slate-400 block sm:inline sm:ml-1">• ${people.map(escapeHtml).join('、')}</span>
+            </div>
+            ${payerLine}
+          </div>
+          
+          <div class="flex flex-col gap-1 items-end pt-0.5 shrink-0">
+            <button onclick="editExpense('${exp.id}')" 
+                    class="w-8 h-8 flex items-center justify-center text-violet-500 hover:bg-violet-50 rounded-xl">
+              <i class="fa-solid fa-pen text-xs"></i>
+            </button>
+            <button onclick="deleteExpense('${exp.id}')" 
+                    class="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-500 rounded-xl">
+              <i class="fa-solid fa-trash text-xs"></i>
+            </button>
+          </div>
+        `;
+        
+        list.appendChild(card);
+      });
+    }
+
+    // ==================== Settlement Logic ====================
+    // Largest remainder：將分帳金額拆成整數毫子，確保加總完全一致
+    function splitAmountEvenly(amount, people) {
+      if (!people || people.length === 0) return {};
+      const totalCents = Math.round((Number(amount) || 0) * 100);
+      const n = people.length;
+      const baseCents = Math.floor(totalCents / n);
+      const remainder = totalCents % n;
+      const shares = {};
+      people.forEach((name, i) => {
+        shares[name] = (baseCents + (i < remainder ? 1 : 0)) / 100;
+      });
+      return shares;
+    }
+
+    function getExpenseSplitDetails(exp) {
+      const fundPaid = Number(exp.fundPaid) || 0;
+      const amount = Number(exp.amount) || 0;
+      const amountToSplit = Math.max(0, amount - fundPaid);
+      const people = exp.splitWith || [];
+      const shares = people.length > 0 ? splitAmountEvenly(amountToSplit, people) : {};
+      return { fundPaid, amount, amountToSplit, people, shares };
+    }
+
+    function formatSharesDisplay(shares, people) {
+      if (!people.length) return '';
+      const values = people.map(p => shares[p] || 0);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      if (Math.abs(min - max) < 0.005) {
+        return `每人 ${formatMoney(min)}`;
+      }
+      return people.map(p => `${p} ${formatMoney(shares[p])}`).join('、');
+    }
+
+    function computeBalances(act) {
+      const balances = {};
+      const allPeople = new Set(act.participants);
+      
+      act.expenses.forEach(e => {
+        allPeople.add(e.payer);
+        e.splitWith.forEach(p => allPeople.add(p));
+      });
+      
+      allPeople.forEach(p => balances[p] = 0);
+      
+      act.expenses.forEach(exp => {
+        if (!exp.splitWith || exp.splitWith.length === 0) return;
+        
+        const { amountToSplit, shares } = getExpenseSplitDetails(exp);
+        if (amountToSplit <= 0.005) return;
+        
+        exp.splitWith.forEach(p => {
+          balances[p] = (balances[p] || 0) - shares[p];
+        });
+        balances[exp.payer] = (balances[exp.payer] || 0) + amountToSplit;
+      });
+      
+      Object.keys(balances).forEach(k => {
+        balances[k] = Math.round(balances[k] * 100) / 100;
+      });
+      
+      return balances;
+    }
+
+    function computePersonSummaries(act) {
+      const people = new Set(act.participants);
+      act.expenses.forEach(e => {
+        people.add(e.payer);
+        e.splitWith.forEach(p => people.add(p));
+      });
+
+      const paid = {};
+      const owed = {};
+      people.forEach(p => { paid[p] = 0; owed[p] = 0; });
+
+      act.expenses.forEach(exp => {
+        if (!exp.splitWith || exp.splitWith.length === 0) return;
+        const { amountToSplit, shares } = getExpenseSplitDetails(exp);
+        if (amountToSplit <= 0.005) return;
+
+        paid[exp.payer] = (paid[exp.payer] || 0) + (Number(exp.amount) || 0);
+        exp.splitWith.forEach(p => {
+          owed[p] = (owed[p] || 0) + shares[p];
+        });
+      });
+
+      const balances = computeBalances(act);
+
+      return [...people].map(name => ({
+        name,
+        paid: Math.round((paid[name] || 0) * 100) / 100,
+        owed: Math.round((owed[name] || 0) * 100) / 100,
+        balance: balances[name] || 0
+      })).sort((a, b) => b.balance - a.balance);
+    }
+
+    function ensureFundTransfers(act) {
+      if (!act) return [];
+      if (!Array.isArray(act.fundTransfers)) act.fundTransfers = [];
+      return act.fundTransfers;
+    }
+
+    function settlementMatchKey(s) {
+      const amount = Math.round((Number(s.amount) || 0) * 100) / 100;
+      return `${s.from}|${s.to}|${amount.toFixed(2)}`;
+    }
+
+    function isSettlementTransferred(act, settlement) {
+      const key = settlementMatchKey(settlement);
+      return ensureFundTransfers(act).some(t => settlementMatchKey(t) === key);
+    }
+
+    function getPendingSettlements(act) {
+      const settlements = computeSettlements(computeBalances(act));
+      return settlements.filter(s => !isSettlementTransferred(act, s));
+    }
+
+    function computeSettlements(balances) {
+      const debtors = [];
+      const creditors = [];
+      
+      Object.entries(balances).forEach(([name, val]) => {
+        if (val < -0.005) debtors.push({ name, amount: -val });
+        else if (val > 0.005) creditors.push({ name, amount: val });
+      });
+      
+      debtors.sort((a, b) => b.amount - a.amount);
+      creditors.sort((a, b) => b.amount - a.amount);
+      
+      const settlements = [];
+      let i = 0, j = 0;
+      
+      while (i < debtors.length && j < creditors.length) {
+        const d = debtors[i];
+        const c = creditors[j];
+        const amt = Math.min(d.amount, c.amount);
+        
+        if (amt > 0.005) {
+          settlements.push({
+            from: d.name,
+            to: c.name,
+            amount: Math.round(amt * 100) / 100
+          });
+        }
+        
+        d.amount -= amt;
+        c.amount -= amt;
+        
+        if (d.amount < 0.005) i++;
+        if (c.amount < 0.005) j++;
+      }
+      
+      return settlements;
+    }
+
+    function renderBalances(balances) {
+      const container = document.getElementById('balances-list');
+      const empty = document.getElementById('balances-empty');
+      
+      container.innerHTML = '';
+      
+      const entries = Object.entries(balances);
+      if (entries.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      
+      // Sort: positive first (to receive), then negative
+      entries.sort((a, b) => b[1] - a[1]);
+      
+      entries.forEach(([name, val]) => {
+        const abs = Math.abs(val);
+        if (abs < 0.01) {
+          // Show as settled
+          const row = document.createElement('div');
+          row.className = `flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-100`;
+          row.innerHTML = `
+            <div class="font-medium">${escapeHtml(name)}</div>
+            <div class="text-right">
+              <div class="font-semibold tabular-nums text-slate-500">${formatMoney(0)}</div>
+              <div class="text-[10px] -mt-0.5 text-slate-400">已兩清</div>
+            </div>
+          `;
+          container.appendChild(row);
+          return;
+        }
+        const isPositive = val >= 0.005;
+        const row = document.createElement('div');
+        row.className = `flex items-center justify-between px-3 py-2 rounded-2xl ${isPositive ? 'balance-positive' : 'balance-negative'}`;
+        
+        row.innerHTML = `
+          <div class="font-medium">${escapeHtml(name)}</div>
+          <div class="text-right">
+            <div class="font-semibold tabular-nums ${isPositive ? 'text-violet-700' : 'text-red-600'}">
+              ${isPositive ? '+' : ''}${formatMoney(abs)}
+            </div>
+            <div class="text-[10px] -mt-0.5 ${isPositive ? 'text-violet-600' : 'text-red-500'}">
+              ${isPositive ? '應收' : '應俾'}
+            </div>
+          </div>
+        `;
+        
+        container.appendChild(row);
+      });
+    }
+
+    function renderSettlements(act) {
+      const container = document.getElementById('settlements-list');
+      const empty = document.getElementById('settlements-empty');
+      const pending = getPendingSettlements(act);
+      const transferred = ensureFundTransfers(act);
+      
+      container.innerHTML = '';
+      
+      pending.forEach(s => {
+        const row = document.createElement('label');
+        row.className = 'settlement-row flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors';
+        
+        row.innerHTML = `
+          <input type="checkbox"
+                 class="settlement-fund-checkbox w-4 h-4 accent-violet-500 shrink-0"
+                 data-from="${escapeHtml(s.from)}"
+                 data-to="${escapeHtml(s.to)}"
+                 data-amount="${s.amount}"
+                 onchange="updateFundTransferButtonState()">
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <span class="font-semibold text-red-600 shrink-0">${escapeHtml(s.from)}</span>
+            <span class="text-slate-400 text-sm px-1">要俾</span>
+            <span class="font-semibold text-violet-700 shrink-0">${escapeHtml(s.to)}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="font-bold tabular-nums text-lg text-slate-800">${formatMoney(s.amount)}</div>
+            <button type="button"
+                    class="copy-settlement-btn w-7 h-7 flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg">
+              <i class="fa-solid fa-copy text-xs"></i>
+            </button>
+          </div>
+        `;
+
+        row.querySelector('.copy-settlement-btn').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          copySettlementLine(s.from, s.to, s.amount);
+        });
+        
+        container.appendChild(row);
+      });
+
+      transferred.forEach(t => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-violet-100 bg-violet-50';
+        
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <i class="fa-solid fa-check-circle text-violet-500 text-sm shrink-0"></i>
+            <span class="font-semibold text-red-600 shrink-0">${escapeHtml(t.from)}</span>
+            <span class="text-slate-400 text-sm px-1">要俾</span>
+            <span class="font-semibold text-violet-700 shrink-0">${escapeHtml(t.to)}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="font-bold tabular-nums text-base text-violet-700">${formatMoney(t.amount)}</div>
+            <span class="text-[10px] font-medium text-violet-600 whitespace-nowrap">已由阿公承擔</span>
+          </div>
+        `;
+        
+        container.appendChild(row);
+      });
+      
+      if (pending.length === 0 && transferred.length === 0) {
+        empty.classList.remove('hidden');
+      } else {
+        empty.classList.add('hidden');
+      }
+
+      updateFundTransferButtonState();
+    }
+
+    function updateFundTransferButtonState() {
+      const act = getCurrentActivity();
+      const controls = document.getElementById('fund-transfer-controls');
+      const btn = document.getElementById('transfer-selected-fund-btn');
+      const amountEl = document.getElementById('transfer-selected-fund-amount');
+      if (!act || !controls || !btn || !amountEl) return;
+
+      const pending = getPendingSettlements(act);
+      const selected = getSelectedPendingSettlements();
+      const selectedTotal = selected.reduce((sum, s) => sum + s.amount, 0);
+
+      controls.classList.toggle('hidden', pending.length === 0);
+      btn.disabled = selected.length === 0;
+      amountEl.textContent = selected.length > 0 ? formatMoney(selectedTotal) : '\u00a0';
+    }
+
+    function getSelectedPendingSettlements() {
+      const act = getCurrentActivity();
+      if (!act) return [];
+
+      const pending = getPendingSettlements(act);
+      const selected = [];
+
+      document.querySelectorAll('.settlement-fund-checkbox:checked').forEach(cb => {
+        const match = pending.find(s =>
+          s.from === cb.dataset.from &&
+          s.to === cb.dataset.to &&
+          Math.abs(s.amount - parseFloat(cb.dataset.amount)) < 0.005
+        );
+        if (match) selected.push(match);
+      });
+
+      return selected;
+    }
+
+    function selectAllFundTransfers(checked) {
+      document.querySelectorAll('.settlement-fund-checkbox').forEach(cb => {
+        cb.checked = checked;
+      });
+      updateFundTransferButtonState();
+    }
+
+    function renderPersonBreakdown(act) {
+      const container = document.getElementById('person-breakdown-list');
+      const empty = document.getElementById('person-breakdown-empty');
+      if (!container || !empty) return;
+
+      container.innerHTML = '';
+      const summaries = computePersonSummaries(act);
+
+      if (summaries.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+
+      summaries.forEach(({ name, paid, owed, balance }) => {
+        const abs = Math.abs(balance);
+        const isSettled = abs < 0.01;
+        const isPositive = balance >= 0.005;
+
+        const row = document.createElement('div');
+        row.className = `px-3 py-3 rounded-2xl border ${isSettled ? 'bg-slate-50 border-slate-100' : isPositive ? 'bg-violet-50/50 border-violet-100' : 'bg-red-50/40 border-red-100'}`;
+
+        row.innerHTML = `
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div class="font-semibold text-slate-800">${escapeHtml(name)}</div>
+            <div class="text-right shrink-0">
+              <div class="font-bold tabular-nums ${isSettled ? 'text-slate-500' : isPositive ? 'text-violet-700' : 'text-red-600'}">
+                ${isSettled ? formatMoney(0) : `${isPositive ? '+' : '−'}${formatMoney(abs)}`}
+              </div>
+              <div class="text-[10px] ${isSettled ? 'text-slate-400' : isPositive ? 'text-violet-600' : 'text-red-500'}">
+                ${isSettled ? '已兩清' : isPositive ? '應收' : '應俾'}
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[11px]">
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/80 border border-slate-100">
+              <div class="text-slate-400">已付</div>
+              <div class="font-semibold tabular-nums text-slate-700 mt-0.5">${formatMoney(paid)}</div>
+            </div>
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/80 border border-slate-100">
+              <div class="text-slate-400">應付份額</div>
+              <div class="font-semibold tabular-nums text-slate-700 mt-0.5">${formatMoney(owed)}</div>
+            </div>
+          </div>
+          ${!isSettled ? `<div class="text-[10px] text-slate-400 mt-1.5 tabular-nums">${formatMoney(paid)} − ${formatMoney(owed)} = ${isPositive ? '+' : '−'}${formatMoney(abs)}</div>` : ''}
+        `;
+
+        container.appendChild(row);
+      });
+    }
+
+    function renderSettlement() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      ensureFundTransfers(act);
+      const balances = computeBalances(act);
+      
+      renderBalances(balances);
+      renderSettlements(act);
+      renderPersonBreakdown(act);
+    }
+
+    // ==================== Main Detail Render ====================
+    function renderDetail() {
+      const act = getCurrentActivity();
+      if (!act) {
+        backToList();
+        return;
+      }
+      
+      // Header name + date
+      document.getElementById('activity-name-display').textContent = act.name;
+      renderActivityDateDisplay();
+      
+      // Participants + form options
+      renderParticipants();
+      renderPayerOptions();
+      
+      // If not editing, default split to all
+      if (!editingExpenseId) {
+        renderSplitOptions();
+      }
+      
+      // Stats
+      renderStats();
+      
+      // Expenses
+      renderExpenses();
+      
+      // Settlement
+      renderSettlement();
+      
+      // 確保基金支付提示正確
+      syncFundMaxHint();
+    }
+
+    function renderStats() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      const total = act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const peopleSet = new Set(act.participants);
+      act.expenses.forEach(e => {
+        peopleSet.add(e.payer);
+        e.splitWith.forEach(p => peopleSet.add(p));
+      });
+      
+      document.getElementById('stat-total').textContent = formatMoney(total);
+      document.getElementById('stat-count').textContent = act.expenses.length;
+      document.getElementById('stat-people').textContent = peopleSet.size;
+    }
+
+    // ==================== Activity Export / Import ====================
+    function sanitizeFilename(name) {
+      return (name || 'activity').replace(/[/\\?%*:|"<>]/g, '-').trim().slice(0, 40) || 'activity';
+    }
+
+    function cloneActivityForExport(act) {
+      ensureActivityDates(act);
+      ensureFundTransfers(act);
+      return {
+        id: act.id,
+        name: act.name,
+        dateStart: act.dateStart || null,
+        dateEnd: act.dateEnd || null,
+        participants: [...(act.participants || [])],
+        expenses: (act.expenses || []).map(exp => ({
+          id: exp.id,
+          payer: exp.payer || '',
+          description: exp.description || '',
+          amount: Math.round((Number(exp.amount) || 0) * 100) / 100,
+          splitWith: [...(exp.splitWith || [])],
+          fundPaid: Math.round((Number(exp.fundPaid) || 0) * 100) / 100,
+          createdAt: exp.createdAt || Date.now()
+        })),
+        fundBalance: Math.round(ensureFundBalance(act) * 100) / 100,
+        fundTransfers: (act.fundTransfers || []).map(t => ({
+          from: t.from || '',
+          to: t.to || '',
+          amount: Math.round((Number(t.amount) || 0) * 100) / 100,
+          transferredAt: t.transferredAt || null
+        })),
+        createdAt: act.createdAt || Date.now(),
+        updatedAt: act.updatedAt || Date.now()
+      };
+    }
+
+    function buildActivityExportPayload(act) {
+      return {
+        format: ACTIVITY_EXPORT_FORMAT,
+        formatVersion: ACTIVITY_EXPORT_VERSION,
+        exportedAt: new Date().toISOString(),
+        appVersion: APP_VERSION,
+        activity: cloneActivityForExport(act)
+      };
+    }
+
+    function downloadJsonFile(filename, content) {
+      const blob = new Blob([content], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCurrentActivity() {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const payload = buildActivityExportPayload(act);
+      const json = JSON.stringify(payload, null, 2);
+      const dateTag = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const filename = `神算子-${sanitizeFilename(act.name)}-${dateTag}.json`;
+
+      copyTextToClipboard(json, '記帳資料已複製！同時已儲存檔案，可以 WhatsApp send 畀朋友');
+      downloadJsonFile(filename, json);
+    }
+
+    function parseActivityImportRaw(raw) {
+      const trimmed = (raw || '').trim();
+      if (!trimmed) throw new Error('請貼上或揀朋友 send 嘅記帳資料');
+
+      const data = JSON.parse(trimmed);
+      if (data && data.format === ACTIVITY_EXPORT_FORMAT && data.activity) {
+        return data.activity;
+      }
+      if (data && data.format === 'yuenzifund-activity' && data.activity) {
+        return data.activity;
+      }
+      if (data && typeof data.name === 'string' && Array.isArray(data.expenses)) {
+        return data;
+      }
+      throw new Error('呢段唔似神算子／圓子基金嘅記帳資料，請確認朋友係用「匯出活動」複製嘅');
+    }
+
+    function normalizeImportedActivity(raw) {
+      if (!raw || typeof raw.name !== 'string') {
+        throw new Error('活動資料唔完整');
+      }
+
+      const act = {
+        id: raw.id || generateId(),
+        name: raw.name.trim() || '匯入活動',
+        dateStart: raw.dateStart || null,
+        dateEnd: raw.dateEnd || null,
+        participants: Array.isArray(raw.participants) ? raw.participants.map(p => String(p).trim()).filter(Boolean) : [],
+        expenses: [],
+        fundTransfers: [],
+        fundBalance: Math.max(0, Math.round((Number(raw.fundBalance) || 0) * 100) / 100),
+        createdAt: raw.createdAt || Date.now(),
+        updatedAt: Date.now()
+      };
+
+      const dates = normalizeActivityDates(act.dateStart, act.dateEnd);
+      act.dateStart = dates.dateStart;
+      act.dateEnd = dates.dateEnd;
+
+      if (Array.isArray(raw.expenses)) {
+        act.expenses = raw.expenses.map(exp => ({
+          id: exp.id || generateId(),
+          payer: String(exp.payer || '').trim(),
+          description: String(exp.description || '').trim() || '未命名開支',
+          amount: Math.max(0, Math.round((Number(exp.amount) || 0) * 100) / 100),
+          splitWith: Array.isArray(exp.splitWith) ? exp.splitWith.map(p => String(p).trim()).filter(Boolean) : [],
+          fundPaid: Math.max(0, Math.round((Number(exp.fundPaid) || 0) * 100) / 100),
+          createdAt: exp.createdAt || Date.now()
+        })).filter(exp => exp.payer && exp.amount > 0 && exp.splitWith.length > 0);
+      }
+
+      if (Array.isArray(raw.fundTransfers)) {
+        act.fundTransfers = raw.fundTransfers.map(t => ({
+          from: String(t.from || '').trim(),
+          to: String(t.to || '').trim(),
+          amount: Math.max(0, Math.round((Number(t.amount) || 0) * 100) / 100),
+          transferredAt: t.transferredAt || Date.now()
+        })).filter(t => t.from && t.to && t.amount > 0);
+      }
+
+      ensureActivityDates(act);
+      ensureFundTransfers(act);
+      return act;
+    }
+
+    function resetImportActivityModalState() {
+      pendingImportActivity = null;
+      const textarea = document.getElementById('import-activity-json');
+      const fileInput = document.getElementById('import-activity-file');
+      const previewWrap = document.getElementById('import-activity-preview-wrap');
+      const preview = document.getElementById('import-activity-preview');
+      const conflictWrap = document.getElementById('import-activity-conflict-wrap');
+      const newBtn = document.getElementById('import-activity-new-btn');
+      const replaceBtn = document.getElementById('import-activity-replace-btn');
+
+      if (textarea) textarea.value = '';
+      if (fileInput) fileInput.value = '';
+      if (previewWrap) previewWrap.classList.add('hidden');
+      if (preview) preview.textContent = '';
+      if (conflictWrap) conflictWrap.classList.add('hidden');
+      if (newBtn) newBtn.disabled = true;
+      if (replaceBtn) {
+        replaceBtn.disabled = true;
+        replaceBtn.classList.add('hidden');
+      }
+    }
+
+    function showImportActivityModal() {
+      const modal = document.getElementById('import-activity-modal');
+      if (!modal) return;
+      resetImportActivityModalState();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lockBodyScroll();
+      setTimeout(() => {
+        const input = document.getElementById('import-activity-json');
+        if (input) input.focus();
+      }, 80);
+    }
+
+    function hideImportActivityModal() {
+      const modal = document.getElementById('import-activity-modal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        unlockBodyScroll();
+      }
+      resetImportActivityModalState();
+    }
+
+    function previewImportActivity() {
+      const raw = document.getElementById('import-activity-json')?.value || '';
+      const previewWrap = document.getElementById('import-activity-preview-wrap');
+      const preview = document.getElementById('import-activity-preview');
+      const conflictWrap = document.getElementById('import-activity-conflict-wrap');
+      const conflictText = document.getElementById('import-activity-conflict-text');
+      const newBtn = document.getElementById('import-activity-new-btn');
+      const replaceBtn = document.getElementById('import-activity-replace-btn');
+
+      if (!raw.trim()) {
+        pendingImportActivity = null;
+        previewWrap?.classList.add('hidden');
+        conflictWrap?.classList.add('hidden');
+        if (newBtn) newBtn.disabled = true;
+        if (replaceBtn) {
+          replaceBtn.disabled = true;
+          replaceBtn.classList.add('hidden');
+        }
+        return;
+      }
+
+      try {
+        const parsed = parseActivityImportRaw(raw);
+        const normalized = normalizeImportedActivity(parsed);
+        pendingImportActivity = normalized;
+
+        const total = normalized.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+        const dateRange = formatActivityDateRange(normalized);
+        if (preview) {
+          preview.innerHTML = `
+            <div class="font-semibold">${escapeHtml(normalized.name)}</div>
+            <div class="mt-1">${normalized.participants.length} 位參加者 • ${normalized.expenses.length} 筆開支 • 總計 ${formatMoney(total)}</div>
+            ${dateRange ? `<div class="mt-0.5 text-violet-700/80">${escapeHtml(dateRange)}</div>` : ''}
+          `;
+        }
+        previewWrap?.classList.remove('hidden');
+
+        const existing = activities.find(a => a.id === normalized.id);
+        if (existing) {
+          conflictText.textContent = `你部機已有「${existing.name}」。覆蓋會用匯入資料取代現有記錄；匯入為新活動會另開一份副本。`;
+          conflictWrap?.classList.remove('hidden');
+          replaceBtn?.classList.remove('hidden');
+          if (replaceBtn) replaceBtn.disabled = false;
+        } else {
+          conflictWrap?.classList.add('hidden');
+          replaceBtn?.classList.add('hidden');
+          if (replaceBtn) replaceBtn.disabled = true;
+        }
+
+        if (newBtn) newBtn.disabled = false;
+      } catch (e) {
+        pendingImportActivity = null;
+        previewWrap?.classList.add('hidden');
+        conflictWrap?.classList.add('hidden');
+        if (newBtn) newBtn.disabled = true;
+        if (replaceBtn) {
+          replaceBtn.disabled = true;
+          replaceBtn.classList.add('hidden');
+        }
+      }
+    }
+
+    function loadImportActivityFile(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const textarea = document.getElementById('import-activity-json');
+        if (textarea) textarea.value = String(reader.result || '');
+        previewImportActivity();
+      };
+      reader.onerror = () => showToast('讀取檔案失敗', 'error');
+      reader.readAsText(file);
+    }
+
+    function confirmImportActivity(mode) {
+      if (!pendingImportActivity) {
+        showToast('請先貼上有效嘅記帳資料', 'error');
+        return;
+      }
+
+      const imported = { ...pendingImportActivity };
+      const existing = activities.find(a => a.id === imported.id);
+
+      if (mode === 'replace') {
+        if (!existing) {
+          showToast('搵唔到要覆蓋嘅活動', 'error');
+          return;
+        }
+        if (!confirm(`確定用匯入資料覆蓋「${existing.name}」？現有開支記錄會被取代。`)) return;
+
+        imported.updatedAt = Date.now();
+        const idx = activities.findIndex(a => a.id === imported.id);
+        activities[idx] = imported;
+        saveToStorage();
+        hideImportActivityModal();
+        selectActivity(imported.id);
+        showToast('活動已覆蓋更新');
+        return;
+      }
+
+      imported.id = generateId();
+      imported.createdAt = Date.now();
+      imported.updatedAt = Date.now();
+      imported.expenses = imported.expenses.map(exp => ({ ...exp, id: generateId() }));
+      activities.unshift(imported);
+      saveToStorage();
+      hideImportActivityModal();
+      selectActivity(imported.id);
+      showToast(existing ? '已匯入為新活動' : '活動已匯入');
+    }
+
+    // ==================== Settlement Copy ====================
+    const SHARE_APP_URL = 'https://nik-neural.github.io/sansuanzi/';
+
+    function buildWhatsAppShareText() {
+      const act = getCurrentActivity();
+      if (!act) return '';
+
+      const balances = computeBalances(act);
+      const total = act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+      const divider = '────────────────';
+
+      const dateRange = formatActivityDateRange(act);
+      const dateKind = getActivityDateKind(act);
+
+      let text = `📊 【神算子】${act.name}\n`;
+      if (dateRange) {
+        text += `📅 ${dateRange}${dateKind ? `（${dateKind.label}）` : ''}\n`;
+      }
+      text += `${divider}\n`;
+      text += `💰 總開支：${formatMoney(total)}\n`;
+      text += `🧮 阿公餘額：${formatMoney(getFundBalance())}\n`;
+      text += `${divider}\n`;
+      text += '【每人明細】\n';
+      computePersonSummaries(act).forEach(({ name, paid, owed, balance }) => {
+        const abs = Math.abs(balance);
+        if (abs < 0.01) {
+          text += `${name}：已付 ${formatMoney(paid)}，應付 ${formatMoney(owed)}，已兩清 ✅\n`;
+        } else {
+          const sign = balance >= 0.005 ? '應收' : '應俾';
+          text += `${name}：已付 ${formatMoney(paid)}，應付 ${formatMoney(owed)}，${sign} ${formatMoney(abs)}\n`;
+        }
+      });
+      text += `${divider}\n`;
+      text += '【每人結餘】\n';
+      Object.entries(balances).sort((a, b) => b[1] - a[1]).forEach(([n, v]) => {
+        const abs = Math.abs(v);
+        if (abs < 0.01) {
+          text += `${n}：已兩清 ✅\n`;
+        } else {
+          const sign = v >= 0.005 ? '應收' : '應俾';
+          text += `${n}：${sign} ${formatMoney(abs)}\n`;
+        }
+      });
+
+      const pending = getPendingSettlements(act);
+      const transferred = ensureFundTransfers(act);
+
+      if (pending.length > 0) {
+        text += `\n${divider}\n`;
+        text += '【建議還款】\n';
+        pending.forEach(s => {
+          text += `${s.from} 要俾 ${s.to} ${formatMoney(s.amount)}\n`;
+        });
+      }
+
+      if (transferred.length > 0) {
+        text += `\n${divider}\n`;
+        text += '【已由阿公承擔】\n';
+        transferred.forEach(t => {
+          text += `${t.from} 要俾 ${t.to} ${formatMoney(t.amount)} ✅\n`;
+        });
+      }
+
+      if (pending.length === 0 && transferred.length === 0) {
+        text += `\n${divider}\n`;
+        text += '✅ 已經結清！大家兩清啦 🎉\n';
+      }
+
+      text += `\n${divider}\n`;
+      text += `🔗 想一齊更新開支？主記帳人撳「匯出活動」複製記帳資料 send 畀大家，大家再喺「匯入活動」貼返入去更新。\n`;
+      text += `📲 未用過神算子？開呢個連結：\n${SHARE_APP_URL}`;
+
+      return text;
+    }
+
+    function copyTextToClipboard(text, successMessage) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast(successMessage);
+      }).catch(() => {
+        prompt('請手動複製以下內容：', text);
+      });
+    }
+
+    function generateWhatsAppShare() {
+      const text = buildWhatsAppShareText();
+      if (!text) return;
+      copyTextToClipboard(text, '已生成 WhatsApp 分享文字');
+    }
+
+    function copySettlementLine(from, to, amount) {
+      const text = `${from} 要俾 ${to} ${formatMoney(amount)}`;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已複製這筆還款');
+      }).catch(() => alert(text));
+    }
+
+    // ==================== 阿公模式 - 結算操作 ====================
+    function markAsDirectlySettled() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const settlements = getPendingSettlements(act);
+      if (settlements.length === 0) {
+        showToast('已經結清，無需額外操作');
+        return;
+      }
+      showToast('已記錄為「完全結清」— 請大家自行轉帳');
+      // 這裡可以之後加「已結清」標記，現階段只給提示
+    }
+
+    function transferSelectedSettlementsToFund() {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const selected = getSelectedPendingSettlements();
+      if (selected.length === 0) {
+        showToast('請至少揀一條還款', 'error');
+        return;
+      }
+
+      const total = selected.reduce((sum, s) => sum + s.amount, 0);
+      const transfers = ensureFundTransfers(act);
+
+      selected.forEach(s => {
+        transfers.push({
+          from: s.from,
+          to: s.to,
+          amount: Math.round(s.amount * 100) / 100,
+          transferredAt: Date.now()
+        });
+      });
+
+      setFundBalance(getFundBalance() + total);
+      updateFundDisplays();
+      updateFundDisplays();
+
+      showToast(`已轉入阿公 ${formatMoney(total)}（${selected.length} 筆）`);
+      renderSettlement();
+
+      setTimeout(() => {
+        showToast('已選還款已由阿公承擔，其餘請大家自行轉帳');
+      }, 1800);
+    }
+
+    // ==================== Demo Data ====================
+    function loadDemoData() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      
+      if (act.expenses.length > 0) {
+        if (!confirm('載入範例會清空現有開支，確定繼續？')) return;
+      }
+      
+      act.participants = ['阿明', '阿華', '小美', '志偉'];
+      
+      act.expenses = [
+        {
+          id: generateId(),
+          payer: '阿明',
+          description: '食飯（4人）',
+          amount: 328,
+          splitWith: ['阿明', '阿華', '小美', '志偉'],
+          createdAt: Date.now() - 100000
+        },
+        {
+          id: generateId(),
+          payer: '阿華',
+          description: '唱K 2小時',
+          amount: 480,
+          splitWith: ['阿明', '阿華', '小美', '志偉'],
+          createdAt: Date.now() - 80000
+        },
+        {
+          id: generateId(),
+          payer: '小美',
+          description: '買水 + 零食',
+          amount: 68,
+          splitWith: ['阿明', '阿華', '小美'],
+          createdAt: Date.now() - 60000
+        },
+        {
+          id: generateId(),
+          payer: '志偉',
+          description: '的士車錢',
+          amount: 95,
+          splitWith: ['阿明', '阿華', '小美', '志偉'],
+          createdAt: Date.now() - 30000
+        }
+      ];
+      
+      act.updatedAt = Date.now();
+      saveToStorage();
+      
+      editingExpenseId = null;
+      renderDetail();
+      showToast('範例數據已載入');
+    }
+
+    // ==================== Init ====================
+    function initTailwind() {
+      // Any runtime tailwind config if needed
+    }
+
+    function init() {
+      initTailwind();
+      loadFromStorage();
+      updateFundDisplays();
+      updateHeaderFundVisibility();
+      
+      // Show activities list by default
+      showActivitiesView();
+      
+      // Keyboard support for global search-ish (future)
+      document.addEventListener('keydown', function(e) {
+        if (e.key === '/' && document.getElementById('view-detail').classList.contains('hidden')) {
+          // focus create on list
+          const quick = document.getElementById('quick-create-input');
+          if (quick && !quick.closest('.hidden')) {
+            e.preventDefault();
+            quick.focus();
+          }
+        }
+      });
+      
+      // Demo hint for first time
+      setTimeout(() => {
+        if (activities.length === 0) {
+          const empty = document.getElementById('activities-empty');
+          if (!empty.classList.contains('hidden')) {
+            // already shows the create hint
+          }
+        }
+      }, 1200);
+      
+      // Expose for debugging (optional)
+      window.SANSUANZI = { getActivities: () => activities, getFund: (id) => { const a = activities.find(x => x.id === id) || getCurrentActivity(); return a ? ensureFundBalance(a) : 0; } };
+    }
+
+    // ==================== Bug Report ====================
+    function showBugReportModal() {
+      const modal = document.getElementById('bug-report-modal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      lockBodyScroll();
+      document.getElementById('bug-report-preview-wrap').classList.add('hidden');
+      setTimeout(() => {
+        const desc = document.getElementById('bug-report-desc');
+        if (desc) desc.focus();
+      }, 80);
+    }
+
+    function hideBugReportModal() {
+      const modal = document.getElementById('bug-report-modal');
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        unlockBodyScroll();
+      }
+    }
+
+    function buildExpenseBreakdown(act) {
+      return act.expenses.map(exp => {
+        const { fundPaid, amount, amountToSplit, people, shares } = getExpenseSplitDetails(exp);
+        const payerShare = shares[exp.payer] || 0;
+        return {
+          id: exp.id,
+          description: exp.description,
+          payer: exp.payer,
+          amount,
+          fundPaid,
+          amountToSplit: Math.round(amountToSplit * 100) / 100,
+          splitWith: [...people],
+          sharesPerPerson: { ...shares },
+          payerShare: Math.round(payerShare * 100) / 100,
+          payerNetAdvance: Math.round((amountToSplit - payerShare) * 100) / 100,
+          createdAt: exp.createdAt || null
+        };
+      });
+    }
+
+    function buildActivityDiagnostics(act) {
+      const balances = computeBalances(act);
+      const settlements = computeSettlements(balances);
+      const pending = getPendingSettlements(act);
+      const transferred = ensureFundTransfers(act);
+      const personSummaries = computePersonSummaries(act);
+
+      return {
+        id: act.id,
+        name: act.name,
+        dateStart: act.dateStart || null,
+        dateEnd: act.dateEnd || null,
+        dayCount: getActivityDayCount(act),
+        dateKind: getActivityDateKind(act)?.label || null,
+        participants: [...act.participants],
+        expenseCount: act.expenses.length,
+        totalExpenses: Math.round(act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100,
+        expenses: buildExpenseBreakdown(act),
+        personSummaries,
+        computedBalances: balances,
+        allSettlements: settlements,
+        pendingSettlements: pending,
+        fundTransfers: transferred.map(t => ({
+          from: t.from,
+          to: t.to,
+          amount: Number(t.amount) || 0,
+          transferredAt: t.transferredAt || null
+        })),
+        balanceSum: Math.round(Object.values(balances).reduce((s, v) => s + v, 0) * 100) / 100
+      };
+    }
+
+    function buildBugReportSnapshot(userDesc, contact) {
+      const currentAct = getCurrentActivity();
+      const snapshot = {
+        meta: {
+          app: '神算子',
+          version: APP_VERSION,
+          reportedAt: new Date().toISOString(),
+          url: window.location.href,
+          userAgent: navigator.userAgent,
+          screen: `${window.screen.width}x${window.screen.height}`,
+          language: navigator.language
+        },
+        userReport: {
+          description: userDesc,
+          contact: contact || null
+        },
+        agongBalance: getCurrentActivity() ? Math.round(getFundBalance() * 100) / 100 : null,
+        currentActivityId: currentActivityId,
+        activityCount: activities.length,
+        activities: activities.map(buildActivityDiagnostics)
+      };
+
+      if (currentAct) {
+        snapshot.focusActivity = buildActivityDiagnostics(currentAct);
+      }
+
+      return snapshot;
+    }
+
+    function formatBugReportText(snapshot) {
+      const divider = '══════════════════════════════════════';
+      const sub = '──────────────────────────────────────';
+      let text = `🐛 【神算子 Bug Report】\n`;
+      text += `${divider}\n\n`;
+
+      text += `📋 用戶描述：\n${snapshot.userReport.description}\n`;
+      if (snapshot.userReport.contact) {
+        text += `📞 聯絡：${snapshot.userReport.contact}\n`;
+      }
+      text += `\n${sub}\n`;
+      text += `🔧 環境：v${snapshot.meta.version} | ${snapshot.meta.reportedAt}\n`;
+      text += `📱 ${snapshot.meta.screen} | ${snapshot.meta.language}\n`;
+      text += `🧮 阿公餘額：${snapshot.agongBalance != null ? formatMoney(snapshot.agongBalance) : '（未揀活動）'}\n`;
+      text += `📂 活動數量：${snapshot.activityCount}\n`;
+
+      const focus = snapshot.focusActivity;
+      if (focus) {
+        text += `\n${divider}\n`;
+        text += `🎯 目前活動：${focus.name}\n`;
+        text += `${sub}\n`;
+        if (focus.dateStart) {
+          text += `日期：${formatActivityDateRange({ dateStart: focus.dateStart, dateEnd: focus.dateEnd })}`;
+          if (focus.dateKind) text += `（${focus.dateKind}）`;
+          text += `\n`;
+        }
+        text += `參加者：${focus.participants.join('、') || '（無）'}\n`;
+        text += `總開支：${formatMoney(focus.totalExpenses)}（${focus.expenseCount} 筆）\n`;
+        text += `結餘總和（應為 0）：${focus.balanceSum}\n\n`;
+
+        text += `【開支明細 + 分帳計算】\n`;
+        focus.expenses.forEach((e, i) => {
+          text += `${i + 1}. ${e.description}\n`;
+          text += `   付款人：${e.payer} | 金額：${formatMoney(e.amount)}`;
+          if (e.fundPaid > 0.005) text += ` | 阿公墊支：${formatMoney(e.fundPaid)}`;
+          text += `\n`;
+          text += `   分帳 ${formatMoney(e.amountToSplit)}：${e.splitWith.map(p => `${p} ${formatMoney(e.sharesPerPerson[p])}`).join('、')}\n`;
+          if (e.payerShare > 0.005) {
+            text += `   ${e.payer} 已付抵扣自己份 ${formatMoney(e.payerShare)}，淨幫墊 ${formatMoney(e.payerNetAdvance)}\n`;
+          }
+        });
+
+        text += `\n【每人明細（已付 / 應付 / 結餘）】\n`;
+        (focus.personSummaries || []).forEach(p => {
+          text += `  ${p.name}：已付 ${formatMoney(p.paid)}，應付 ${formatMoney(p.owed)}，結餘 ${p.balance >= 0 ? '+' : ''}${p.balance.toFixed(2)}\n`;
+        });
+
+        text += `\n【每人結餘（正=應收，負=應俾）】\n`;
+        Object.entries(focus.computedBalances)
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([name, val]) => {
+            text += `  ${name}：${val >= 0 ? '+' : ''}${val.toFixed(2)}\n`;
+          });
+
+        if (focus.pendingSettlements.length > 0) {
+          text += `\n【待還款（最少轉帳）】\n`;
+          focus.pendingSettlements.forEach(s => {
+            text += `  ${s.from} → ${s.to}：${formatMoney(s.amount)}\n`;
+          });
+        }
+
+        if (focus.fundTransfers.length > 0) {
+          text += `\n【已由阿公承擔】\n`;
+          focus.fundTransfers.forEach(t => {
+            text += `  ${t.from} → ${t.to}：${formatMoney(t.amount)}\n`;
+          });
+        }
+
+        if (focus.pendingSettlements.length === 0 && focus.fundTransfers.length === 0) {
+          text += `\n✅ 此活動已結清\n`;
+        }
+      }
+
+      if (snapshot.activityCount > 1) {
+        text += `\n${divider}\n`;
+        text += `📂 其他活動摘要\n`;
+        snapshot.activities
+          .filter(a => a.id !== snapshot.currentActivityId)
+          .forEach(a => {
+            text += `  • ${a.name}：${formatMoney(a.totalExpenses)}，${a.expenseCount} 筆，結餘總和 ${a.balanceSum}\n`;
+          });
+      }
+
+      text += `\n${divider}\n`;
+      text += `📦 完整 JSON 數據（供開發者 / AI 分析）\n`;
+      text += JSON.stringify(snapshot, null, 2);
+
+      return text;
+    }
+
+    function generateAndCopyBugReport() {
+      const descEl = document.getElementById('bug-report-desc');
+      const contactEl = document.getElementById('bug-report-contact');
+      const userDesc = (descEl?.value || '').trim();
+
+      if (!userDesc) {
+        showToast('請描述你覺得邊度計錯', 'error');
+        descEl?.focus();
+        return;
+      }
+
+      const contact = (contactEl?.value || '').trim();
+      const snapshot = buildBugReportSnapshot(userDesc, contact);
+      const reportText = formatBugReportText(snapshot);
+
+      const previewWrap = document.getElementById('bug-report-preview-wrap');
+      const preview = document.getElementById('bug-report-preview');
+      if (previewWrap && preview) {
+        preview.textContent = reportText.slice(0, 1200) + (reportText.length > 1200 ? '\n…（已截斷預覽）' : '');
+        previewWrap.classList.remove('hidden');
+      }
+
+      copyTextToClipboard(reportText, 'Bug report 已複製！請 paste 畀開發者 (Nik)');
+    }
+
+    function showHelp() {
+      const msg = `神算子 使用小貼士：
+
+1. 建立活動（例如「唱K + 食飯」），可選填日期
+2. 加入所有朋友名字
+3. 新增每筆開支：誰俾錢、幾多錢、項目、分俾邊啲人
+4. 有需要可以開「阿公」— 每個活動有自己嘅公數，墊支同結算轉入
+5. 系統自動計算每人結餘同最少還款方案
+
+想同朋友一齊記帳？用「匯出活動」複製資料 send 畀朋友，佢哋用「匯入活動」貼返入去。
+
+覺得計錯數？撳右上角 🐛 報告問題。
+
+所有資料只存在你手機/電腦入面，安全可靠。`;
+      alert(msg);
+    }
+
+    // Boot
+    window.onload = init;
+  </script>
+</body>
+</html>
