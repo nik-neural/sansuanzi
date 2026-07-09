@@ -36,6 +36,7 @@
 ## 技術
 
 - 單一 HTML · Tailwind CDN · 零後端
+- UI：iOS 26 **Liquid Glass**（半透明導航層、玻璃卡片、膠囊按鈕、環境色折射）
 - [GitHub Pages](https://pages.github.com/) 部署
 - PWA（`manifest.json` + `icons/`）
 - 資料儲存喺瀏覽器 localStorage，唔会上傳伺服器

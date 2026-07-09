@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#7c3aed">
+  <meta name="theme-color" content="#e8e4f5">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="神算子">
   <meta name="description" content="朋友之間嘅群組分帳神器，支援阿公墊支同結算">
   <link rel="manifest" href="manifest.json">
@@ -16,85 +16,269 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;family=Inter:wght@400;500;600&amp;display=swap');
-    
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&display=swap');
+
     :root {
+      --lg-accent: #8b5cf6;
+      --lg-accent-strong: #7c3aed;
+      --lg-accent-soft: rgba(139, 92, 246, 0.14);
+      --lg-text: #1c1c1e;
+      --lg-text-secondary: #636366;
+      --lg-text-tertiary: #8e8e93;
+      --lg-separator: rgba(60, 60, 67, 0.12);
+      --lg-glass: rgba(255, 255, 255, 0.52);
+      --lg-glass-thick: rgba(255, 255, 255, 0.72);
+      --lg-glass-thin: rgba(255, 255, 255, 0.38);
+      --lg-glass-border: rgba(255, 255, 255, 0.62);
+      --lg-glass-highlight: rgba(255, 255, 255, 0.85);
+      --lg-shadow: 0 10px 40px rgba(88, 28, 135, 0.10), 0 2px 8px rgba(15, 23, 42, 0.04);
+      --lg-shadow-sm: 0 4px 16px rgba(88, 28, 135, 0.07), 0 1px 3px rgba(15, 23, 42, 0.04);
+      --lg-radius: 26px;
+      --lg-radius-sm: 18px;
+      --lg-radius-pill: 999px;
+      --lg-blur: 40px;
+      --lg-saturate: 180%;
       --primary: #7c3aed;
+      color-scheme: light;
     }
-    
+
+    * { -webkit-tap-highlight-color: transparent; }
+
+    html { height: 100%; }
+
     body {
-      font-family: 'Noto Sans TC', 'Inter', system-ui, -apple-system, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+        "Noto Sans TC", system-ui, sans-serif;
+      color: var(--lg-text);
+      background: #e8e4f5;
+      min-height: 100%;
+      min-height: 100dvh;
+      position: relative;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: env(safe-area-inset-bottom);
     }
-    
+
+    /* Ambient mesh so Liquid Glass can refract surrounding colour */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      background:
+        radial-gradient(ellipse 80% 60% at 10% -10%, rgba(167, 139, 250, 0.55), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 95% 10%, rgba(244, 114, 182, 0.28), transparent 50%),
+        radial-gradient(ellipse 60% 50% at 50% 100%, rgba(96, 165, 250, 0.32), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 0% 70%, rgba(196, 181, 253, 0.35), transparent 50%),
+        linear-gradient(165deg, #f3f0ff 0%, #ebe8f8 40%, #e4eefb 100%);
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.45), transparent 35%),
+        radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.25), transparent 40%);
+    }
+
+    /* ===== Liquid Glass materials ===== */
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.48);
+      -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
+      backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate));
+      border-bottom: 0.5px solid rgba(255, 255, 255, 0.55);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.7) inset,
+        0 8px 32px rgba(88, 28, 135, 0.06);
+    }
+
+    .hk-card,
+    .glass-card {
+      background: var(--lg-glass);
+      -webkit-backdrop-filter: blur(28px) saturate(160%);
+      backdrop-filter: blur(28px) saturate(160%);
+      border-radius: var(--lg-radius);
+      border: 0.5px solid var(--lg-glass-border);
+      box-shadow:
+        0 1px 0 var(--lg-glass-highlight) inset,
+        var(--lg-shadow-sm);
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+                  box-shadow 0.2s ease,
+                  border-color 0.2s ease;
+    }
+
+    .hk-card:hover,
+    .glass-card:hover {
+      border-color: rgba(255, 255, 255, 0.85);
+      box-shadow:
+        0 1px 0 var(--lg-glass-highlight) inset,
+        var(--lg-shadow);
+    }
+
+    .glass-pill {
+      background: rgba(255, 255, 255, 0.42);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      backdrop-filter: blur(20px) saturate(150%);
+      border: 0.5px solid rgba(255, 255, 255, 0.55);
+      border-radius: var(--lg-radius-pill);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+    }
+
+    .glass-control {
+      background: rgba(255, 255, 255, 0.5);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      backdrop-filter: blur(16px) saturate(140%);
+      border: 0.5px solid rgba(255, 255, 255, 0.55);
+      border-radius: var(--lg-radius-sm);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+      transition: background 0.15s ease, transform 0.12s ease;
+    }
+
+    .glass-control:hover {
+      background: rgba(255, 255, 255, 0.68);
+    }
+
+    .glass-control:active {
+      transform: scale(0.97);
+    }
+
+    .btn-liquid {
+      background: linear-gradient(180deg, #a78bfa 0%, var(--lg-accent-strong) 100%);
+      color: #fff;
+      border: 0.5px solid rgba(255, 255, 255, 0.35);
+      border-radius: var(--lg-radius-pill);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 6px 20px rgba(124, 58, 237, 0.35);
+      font-weight: 600;
+      transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-liquid:hover {
+      filter: brightness(1.05);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 8px 24px rgba(124, 58, 237, 0.42);
+    }
+
+    .btn-liquid:active {
+      transform: scale(0.97);
+      filter: brightness(0.97);
+    }
+
+    .btn-liquid-ghost {
+      background: rgba(255, 255, 255, 0.4);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      color: var(--lg-text);
+      border: 0.5px solid rgba(255, 255, 255, 0.55);
+      border-radius: var(--lg-radius-pill);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+      font-weight: 600;
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+
+    .btn-liquid-ghost:active { transform: scale(0.97); }
+
+    .btn-liquid-danger {
+      background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
+      color: #fff;
+      border: 0.5px solid rgba(255, 255, 255, 0.3);
+      border-radius: var(--lg-radius-pill);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.3) inset,
+        0 6px 18px rgba(225, 29, 72, 0.3);
+      font-weight: 600;
+    }
+
     .expense-card {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      background: rgba(255, 255, 255, 0.42);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      backdrop-filter: blur(18px) saturate(150%);
+      border: 0.5px solid rgba(255, 255, 255, 0.55);
+      border-radius: var(--lg-radius-sm);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s ease;
     }
-    
+
     .expense-card:hover {
       transform: translateY(-1px);
-      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.7) inset,
+        0 8px 24px rgba(88, 28, 135, 0.08);
     }
-    
+
     .participant-badge {
-      transition: all 0.1s ease;
+      background: rgba(139, 92, 246, 0.14);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border: 0.5px solid rgba(167, 139, 250, 0.28);
+      color: #6d28d9;
+      border-radius: var(--lg-radius-pill);
+      transition: background 0.12s ease, transform 0.12s ease;
     }
-    
+
     .participant-badge:hover {
-      background-color: #f1e7ff;
+      background: rgba(139, 92, 246, 0.22);
     }
-    
+
     .section-title {
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 600;
-      letter-spacing: 0.025em;
-      color: #475569;
+      letter-spacing: 0.02em;
+      color: var(--lg-text-secondary);
     }
-    
-    .money {
-      font-variant-numeric: tabular-nums;
-    }
-    
+
+    .money { font-variant-numeric: tabular-nums; }
+
     .settlement-row {
-      transition: background-color 0.1s ease;
+      background: rgba(255, 255, 255, 0.38);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border: 0.5px solid rgba(255, 255, 255, 0.5);
+      transition: background 0.12s ease;
     }
-    
+
     .settlement-row:hover {
-      background-color: #f8fafc;
+      background: rgba(255, 255, 255, 0.58);
     }
-    
+
     .app-container {
       max-width: 1080px;
       margin: 0 auto;
     }
-    
-    .hk-card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 6px -1px rgb(15 23 42 / 0.07), 0 2px 4px -2px rgb(15 23 42 / 0.07);
-    }
-    
+
     .nav-active {
-      background-color: #f5f3ff;
-      color: #7c3aed;
+      background: var(--lg-accent-soft);
+      color: var(--lg-accent-strong);
       font-weight: 600;
     }
-    
+
     .balance-positive {
-      background-color: #f5f3ff;
-      color: #7c3aed;
+      background: rgba(139, 92, 246, 0.12);
+      border: 0.5px solid rgba(167, 139, 250, 0.25);
+      color: #6d28d9;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
     }
-    
+
     .balance-negative {
-      background-color: #fef2f2;
-      color: #ef4444;
+      background: rgba(244, 63, 94, 0.1);
+      border: 0.5px solid rgba(251, 113, 133, 0.25);
+      color: #e11d48;
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
     }
-    
+
     .amount {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
-    
+
     .empty-state {
-      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+      background: transparent;
     }
 
     .date-field-group {
@@ -103,25 +287,43 @@
       gap: 0.5rem;
     }
 
-    .date-input {
+    .date-input,
+    .field-liquid {
       width: 100%;
       min-width: 0;
       height: 3rem;
       min-height: 3rem;
-      padding: 0 0.75rem;
-      border: 1px solid #e2e8f0;
-      border-radius: 1rem;
-      font-size: 0.875rem;
+      padding: 0 1rem;
+      border: 0.5px solid rgba(255, 255, 255, 0.55);
+      border-radius: var(--lg-radius-sm);
+      font-size: 0.9375rem;
       line-height: 1.25rem;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.45);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
       box-sizing: border-box;
       -webkit-appearance: none;
       appearance: none;
+      color: var(--lg-text);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     }
 
-    .date-input:focus {
+    .date-input:focus,
+    .field-liquid:focus {
       outline: none;
-      border-color: #a78bfa;
+      border-color: rgba(167, 139, 250, 0.7);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.6) inset,
+        0 0 0 3px rgba(139, 92, 246, 0.18);
+    }
+
+    select.field-liquid {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238e8e93' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.25rem;
     }
 
     input[type="date"]::-webkit-date-and-time-value {
@@ -132,26 +334,34 @@
       .date-input {
         height: 2.75rem;
         min-height: 2.75rem;
-        padding: 0 0.5rem;
-        font-size: 0.75rem;
+        padding: 0 0.75rem;
+        font-size: 0.8125rem;
       }
-
-      .date-fields-row {
-        gap: 0.5rem;
-      }
+      .date-fields-row { gap: 0.5rem; }
     }
 
     .modal-overlay {
       z-index: 300;
+      background: rgba(15, 10, 30, 0.28);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      backdrop-filter: blur(18px) saturate(140%);
     }
 
-    .modal-sheet {
+    .modal-sheet,
+    .glass-sheet {
       position: relative;
       z-index: 1;
-      max-height: min(88vh, 640px);
+      max-height: min(88vh, 720px);
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.72);
+      -webkit-backdrop-filter: blur(48px) saturate(180%);
+      backdrop-filter: blur(48px) saturate(180%);
+      border: 0.5px solid rgba(255, 255, 255, 0.7);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 -20px 60px rgba(88, 28, 135, 0.08),
+        0 24px 80px rgba(15, 23, 42, 0.18);
       padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
     }
 
@@ -159,44 +369,132 @@
       overflow: hidden;
       touch-action: none;
     }
+
+    /* Icon bubble — liquid accent */
+    .icon-blob {
+      background: linear-gradient(145deg, #c4b5fd 0%, #7c3aed 100%);
+      border: 0.5px solid rgba(255, 255, 255, 0.4);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.45) inset,
+        0 6px 16px rgba(124, 58, 237, 0.35);
+      border-radius: 22%;
+    }
+
+    /* Fund highlight card */
+    .fund-glass {
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.28), rgba(255, 255, 255, 0.45));
+      -webkit-backdrop-filter: blur(28px) saturate(170%);
+      backdrop-filter: blur(28px) saturate(170%);
+      border: 0.5px solid rgba(196, 181, 253, 0.5);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.7) inset,
+        0 8px 28px rgba(124, 58, 237, 0.12);
+    }
+
+    /* WhatsApp accent glass */
+    .wa-glass {
+      background: linear-gradient(135deg, rgba(37, 211, 102, 0.12), rgba(255, 255, 255, 0.5));
+      border: 0.5px solid rgba(37, 211, 102, 0.22);
+    }
+
+    /* Soft notice */
+    .notice-glass {
+      background: rgba(139, 92, 246, 0.1);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      border: 0.5px solid rgba(167, 139, 250, 0.28);
+    }
+
+    /* Toast liquid glass */
+    .toast-liquid {
+      background: rgba(28, 28, 30, 0.78);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      backdrop-filter: blur(24px) saturate(160%);
+      border: 0.5px solid rgba(255, 255, 255, 0.12);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.12) inset,
+        0 12px 40px rgba(0, 0, 0, 0.25);
+      border-radius: var(--lg-radius-pill);
+      color: #fff;
+    }
+
+    .toast-liquid.error {
+      background: rgba(190, 18, 60, 0.82);
+    }
+
+    /* Scrollbar — minimal */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 99, 102, 0.28);
+      border-radius: 99px;
+    }
+
+    .custom-scroll { scrollbar-width: thin; scrollbar-color: rgba(99,99,102,0.28) transparent; }
+
+    /* Chip / tag */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      border-radius: var(--lg-radius-pill);
+      font-weight: 500;
+      border: 0.5px solid transparent;
+    }
+
+    /* Specular press feedback */
+    .pressable:active { transform: scale(0.97); }
+
+    @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+      .glass-nav, .hk-card, .glass-card, .modal-sheet, .glass-sheet,
+      .glass-pill, .glass-control, .expense-card, .fund-glass {
+        background: rgba(255, 255, 255, 0.92);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
-  <!-- Header -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+<body class="text-slate-800 antialiased">
+  <!-- Header — Liquid Glass navigation layer -->
+  <header class="glass-nav sticky top-0 z-50" style="padding-top: env(safe-area-inset-top);">
     <div class="app-container px-4 sm:px-6">
-      <div class="flex items-center justify-between h-16">
+      <div class="flex items-center justify-between h-14 sm:h-16">
         <div class="flex items-center gap-x-3">
-          <div class="w-10 h-10 bg-violet-500 rounded-2xl flex items-center justify-center shadow-sm">
-            <i class="fa-solid fa-wand-magic-sparkles text-white text-2xl"></i>
+          <div class="icon-blob w-10 h-10 flex items-center justify-center">
+            <i class="fa-solid fa-wand-magic-sparkles text-white text-lg"></i>
           </div>
           <div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900">神算子</h1>
-            <p class="text-[10px] text-slate-500 -mt-1">一鍵神算，唔使爭</p>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">神算子</h1>
+            <p class="text-[10px] text-slate-500/80 -mt-0.5 font-medium">一鍵神算，唔使爭</p>
           </div>
         </div>
         
-        <div class="flex items-center gap-x-2 text-sm">
+        <div class="flex items-center gap-x-1.5 sm:gap-x-2 text-sm">
           <!-- 阿公餘額（活動內） -->
           <button id="header-fund-btn" onclick="showFundManagerModal()" 
-                  class="hidden items-center gap-x-1.5 pl-3 pr-4 h-9 bg-violet-100 hover:bg-violet-200 active:bg-violet-300 transition-colors rounded-2xl text-violet-700 font-medium text-sm">
-            <i class="fa-solid fa-coins"></i>
+                  class="hidden items-center gap-x-1.5 pl-3 pr-3.5 h-9 glass-pill text-violet-700 font-medium text-sm pressable">
+            <i class="fa-solid fa-coins text-violet-500"></i>
             <span class="hidden sm:inline text-xs">阿公</span>
             <span id="fund-balance-header" class="font-bold tabular-nums">HK$0.00</span>
           </button>
 
-          <div class="hidden sm:flex items-center gap-x-1.5 px-3 py-1.5 bg-slate-100 rounded-2xl text-slate-600">
+          <div class="hidden sm:flex items-center gap-x-1.5 px-3 py-1.5 glass-pill text-slate-600">
             <i class="fa-solid fa-mobile-screen text-xs"></i>
             <span class="text-xs font-medium">手機友好</span>
           </div>
           <button onclick="showBugReportModal()" 
-                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-2xl transition-colors"
+                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-amber-600 glass-control pressable"
                   title="報告問題">
-            <i class="fa-solid fa-bug text-lg"></i>
+            <i class="fa-solid fa-bug text-base"></i>
           </button>
           <button onclick="showHelp()" 
-                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-2xl transition-colors">
-            <i class="fa-solid fa-question-circle text-lg"></i>
+                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 glass-control pressable">
+            <i class="fa-solid fa-question-circle text-base"></i>
           </button>
         </div>
       </div>
@@ -209,11 +507,11 @@
     <div id="view-activities">
       <div class="flex items-end justify-between mb-5">
         <div>
-          <h2 class="text-2xl font-semibold tracking-tight">我的活動</h2>
+          <h2 class="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">我的活動</h2>
           <p class="text-slate-500 text-sm mt-0.5">選擇一個活動開始記帳</p>
         </div>
         <button onclick="showCreateActivityModal()" 
-                class="hidden sm:flex items-center gap-x-2 bg-violet-500 hover:bg-violet-600 active:bg-violet-700 transition-all text-white px-5 h-11 rounded-2xl text-sm font-semibold shadow-sm">
+                class="hidden sm:flex items-center gap-x-2 btn-liquid px-5 h-11 text-sm">
           <i class="fa-solid fa-plus"></i>
           <span>建立新活動</span>
         </button>
@@ -221,14 +519,14 @@
 
       <!-- Create Activity (Mobile prominent) -->
       <div class="sm:hidden mb-4">
-        <div class="hk-card p-4 border border-slate-100">
+        <div class="hk-card p-4">
           <div class="text-xs font-semibold text-slate-500 mb-2">快速建立新活動</div>
           <div class="flex gap-2 min-w-0">
             <input id="quick-create-input" type="text" placeholder="例如：唱K + 食飯" 
-                   class="flex-1 min-w-0 px-4 h-11 border border-slate-200 focus:border-violet-400 rounded-2xl text-sm outline-none"
+                   class="field-liquid flex-1 min-w-0 h-11 text-sm outline-none"
                    onkeydown="if(event.key==='Enter') createQuickActivity()">
             <button onclick="createQuickActivity()" 
-                    class="shrink-0 whitespace-nowrap px-4 h-11 bg-violet-500 text-white rounded-2xl font-semibold text-sm active:bg-violet-600">建立</button>
+                    class="shrink-0 whitespace-nowrap px-5 h-11 btn-liquid text-sm">建立</button>
           </div>
         </div>
       </div>
@@ -236,9 +534,9 @@
       <!-- 接手記帳 -->
       <div class="mb-4">
         <button onclick="showImportActivityModal()" 
-                class="w-full hk-card p-4 border border-[#25D366]/20 bg-gradient-to-r from-[#25D366]/5 to-white hover:border-[#25D366]/40 active:scale-[0.985] transition-all flex items-center justify-between gap-3 text-left">
+                class="w-full hk-card wa-glass p-4 active:scale-[0.985] transition-all flex items-center justify-between gap-3 text-left pressable">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-2xl bg-[#25D366]/15 text-[#128C7E] flex items-center justify-center shrink-0">
+            <div class="w-10 h-10 rounded-[22%] bg-[#25D366]/18 text-[#128C7E] flex items-center justify-center shrink-0 border border-[#25D366]/20">
               <i class="fa-brands fa-whatsapp text-lg"></i>
             </div>
             <div class="min-w-0">
@@ -256,12 +554,12 @@
       </div>
 
       <div id="activities-empty" class="hidden mt-8 text-center py-8">
-        <div class="mx-auto w-16 h-16 bg-slate-100 rounded-3xl flex items-center justify-center mb-4">
+        <div class="mx-auto w-16 h-16 glass-control rounded-3xl flex items-center justify-center mb-4">
           <i class="fa-solid fa-users text-3xl text-slate-400"></i>
         </div>
         <p class="text-slate-500">仲未有任何活動</p>
         <button onclick="showCreateActivityModal()" 
-                class="mt-4 text-violet-600 font-semibold text-sm flex items-center gap-1.5 mx-auto">
+                class="mt-4 btn-liquid px-4 h-10 text-sm inline-flex items-center gap-1.5 mx-auto">
           <i class="fa-solid fa-plus"></i> 建立第一個活動
         </button>
       </div>
@@ -272,19 +570,19 @@
       <!-- Top bar -->
       <div class="flex items-center justify-between mb-4">
         <button onclick="backToList()" 
-                class="flex items-center gap-x-2 text-slate-600 hover:text-slate-900 font-medium text-sm px-3 py-2 -ml-3 rounded-2xl hover:bg-white active:bg-slate-100 transition-colors">
+                class="flex items-center gap-x-2 text-slate-700 font-medium text-sm px-3.5 py-2 -ml-2 glass-pill pressable">
           <i class="fa-solid fa-arrow-left text-base"></i>
           <span>返回活動列表</span>
         </button>
         
         <div class="flex items-center gap-x-2">
           <button onclick="exportCurrentActivity()" 
-                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl bg-[#25D366]/10 text-[#128C7E] hover:bg-[#25D366]/20 active:bg-[#25D366]/25 transition-colors font-semibold">
+                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 glass-pill text-[#128C7E] font-semibold pressable border border-[#25D366]/20">
             <i class="fa-brands fa-whatsapp"></i>
             <span>複製俾朋友</span>
           </button>
           <button onclick="deleteCurrentActivity()" 
-                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 rounded-2xl text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors font-medium">
+                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 glass-pill text-red-600 font-medium pressable">
             <i class="fa-solid fa-trash-can"></i>
             <span class="hidden sm:inline">刪除活動</span>
           </button>
@@ -295,10 +593,10 @@
       <div class="mb-5">
         <div class="flex items-center gap-x-3">
           <div id="activity-name-display" 
-               class="text-3xl font-bold tracking-tight text-slate-900 cursor-pointer hover:text-violet-600 transition-colors"
+               class="text-3xl font-bold tracking-tight text-slate-900 cursor-pointer hover:text-violet-600 transition-colors drop-shadow-sm"
                onclick="editActivityName()"></div>
           <button onclick="editActivityName()" 
-                  class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-violet-500 hover:bg-violet-50 rounded-2xl transition-all">
+                  class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-violet-500 glass-control pressable">
             <i class="fa-solid fa-pen text-sm"></i>
           </button>
         </div>
@@ -321,21 +619,21 @@
       </div>
 
       <!-- Local data notice -->
-      <div id="local-data-notice" class="mb-4 px-4 py-3 rounded-2xl bg-violet-50 border border-violet-100 flex gap-2.5 items-start">
+      <div id="local-data-notice" class="mb-4 px-4 py-3 rounded-[20px] notice-glass flex gap-2.5 items-start">
         <i class="fa-solid fa-mobile-screen text-violet-500 text-sm mt-0.5 shrink-0"></i>
         <p class="flex-1 text-xs leading-relaxed text-violet-700">
           呢個 app 資料只存在你自己部電話/電腦入面，唔會即時 share 畀其他人。
           想交俾朋友接手？撳「<span class="font-semibold">複製俾朋友</span>」→ 去 WhatsApp <span class="font-semibold">貼上</span> send 就得。朋友喺活動列表撳「<span class="font-semibold">接手記帳</span>」貼返入去。
         </p>
         <button type="button" onclick="dismissLocalDataNotice()" aria-label="關閉提示"
-                class="w-6 h-6 -mr-1 -mt-0.5 shrink-0 flex items-center justify-center text-violet-400 hover:text-violet-700 hover:bg-violet-100 rounded-lg transition-colors">
+                class="w-6 h-6 -mr-1 -mt-0.5 shrink-0 flex items-center justify-center text-violet-400 hover:text-violet-700 glass-control pressable">
           <i class="fa-solid fa-times text-sm"></i>
         </button>
       </div>
 
       <!-- 阿公餘額（每個活動獨立） -->
       <div onclick="showFundManagerModal()" 
-           class="hk-card mb-5 p-4 border border-violet-100 bg-gradient-to-r from-violet-50 to-white cursor-pointer active:scale-[0.985] transition-all">
+           class="hk-card fund-glass mb-5 p-4 cursor-pointer active:scale-[0.985] transition-all pressable">
         <div class="flex items-center justify-between">
           <div>
             <div class="flex items-center gap-x-2 text-violet-600">
@@ -352,14 +650,14 @@
       </div>
 
       <!-- Participants -->
-      <div class="hk-card p-5 mb-5 border border-slate-100">
+      <div class="hk-card p-5 mb-5">
         <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
           <div class="section-title flex items-center gap-2 min-w-0">
             <i class="fa-solid fa-user-friends shrink-0"></i>
-            <span>參加者 <span id="participant-count" class="font-mono text-xs bg-white px-1.5 py-px rounded">0</span></span>
+            <span>參加者 <span id="participant-count" class="font-mono text-xs glass-pill px-1.5 py-px">0</span></span>
           </div>
           <button onclick="clearAllExpenses()" 
-                  class="shrink-0 whitespace-nowrap text-xs font-medium text-slate-500 hover:text-red-500 flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-red-50 transition-colors">
+                  class="shrink-0 whitespace-nowrap text-xs font-medium text-slate-500 hover:text-red-500 flex items-center gap-1 px-2.5 py-1 glass-pill pressable">
             <i class="fa-solid fa-eraser text-xs"></i>
             <span>清空開支</span>
           </button>
@@ -373,10 +671,10 @@
         <!-- Add participant -->
         <div class="mt-3 flex gap-2 min-w-0">
           <input id="new-participant-input" type="text" placeholder="朋友名字，例如：阿華" 
-                 class="flex-1 min-w-0 px-4 h-10 text-sm border border-slate-200 focus:border-violet-400 focus:ring-1 focus:ring-violet-200 rounded-2xl outline-none"
+                 class="field-liquid flex-1 min-w-0 h-10 text-sm outline-none"
                  onkeydown="if(event.key==='Enter') addParticipant()">
           <button onclick="addParticipant()" 
-                  class="shrink-0 whitespace-nowrap px-4 h-10 bg-slate-800 hover:bg-black text-white rounded-2xl text-sm font-semibold transition-colors">
+                  class="shrink-0 whitespace-nowrap px-4 h-10 btn-liquid text-sm">
             加入
           </button>
         </div>
@@ -385,15 +683,15 @@
       <!-- Stats -->
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
         <!-- 總開支：手機獨佔一行 -->
-        <div class="hk-card px-3 sm:px-4 py-3 border border-slate-100 col-span-2 sm:col-span-1">
+        <div class="hk-card px-3 sm:px-4 py-3 col-span-2 sm:col-span-1">
           <div class="text-xs text-slate-500">總開支</div>
           <div id="stat-total" class="text-xl sm:text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">HK$0</div>
         </div>
-        <div class="hk-card px-4 py-3 border border-slate-100">
+        <div class="hk-card px-4 py-3">
           <div class="text-xs text-slate-500">開支筆數</div>
           <div id="stat-count" class="text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">0</div>
         </div>
-        <div class="hk-card px-4 py-3 border border-slate-100">
+        <div class="hk-card px-4 py-3">
           <div class="text-xs text-slate-500">參加人數</div>
           <div id="stat-people" class="text-2xl font-semibold tabular-nums text-slate-900 mt-0.5">0</div>
         </div>
@@ -404,7 +702,7 @@
         
         <!-- Add Expense Form -->
         <div class="flex flex-col min-h-0">
-          <div class="hk-card p-5 border border-slate-100 flex-1 flex flex-col">
+          <div class="hk-card p-5 flex-1 flex flex-col">
             <div class="section-title mb-3 flex items-center gap-2">
               <i class="fa-solid fa-receipt"></i>
               <span id="expense-form-title">新增開支</span>
@@ -415,7 +713,7 @@
               <div class="mb-3">
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">誰俾錢？</label>
                 <select id="payer-select" required
-                        class="w-full h-11 px-4 border border-slate-200 rounded-2xl text-sm bg-white focus:border-violet-400 outline-none">
+                        class="field-liquid w-full h-11 text-sm outline-none">
                   <!-- options populated by JS -->
                 </select>
               </div>
@@ -424,7 +722,7 @@
               <div class="mb-3">
                 <label class="block text-xs font-semibold text-slate-600 mb-1.5">項目名稱</label>
                 <input id="expense-desc" type="text" required placeholder="例如：食飯 / 唱K / 買水"
-                       class="w-full h-11 px-4 border border-slate-200 rounded-2xl text-sm focus:border-violet-400 outline-none">
+                       class="field-liquid w-full h-11 text-sm outline-none">
               </div>
               
               <!-- Amount -->
@@ -433,7 +731,7 @@
                 <div class="relative">
                   <div class="absolute left-4 top-1/2 -mt-2 text-slate-400 font-medium">$</div>
                   <input id="expense-amount" type="number" step="0.01" min="0.01" required placeholder="0.00"
-                         class="w-full h-11 pl-8 pr-4 border border-slate-200 rounded-2xl text-sm focus:border-violet-400 outline-none"
+                         class="field-liquid w-full h-11 pl-8 pr-4 text-sm outline-none"
                          oninput="syncFundMaxHint()">
                 </div>
               </div>
@@ -448,7 +746,7 @@
                   <div class="relative flex-1">
                     <div class="absolute left-4 top-1/2 -mt-2 text-violet-500 font-medium">$</div>
                     <input id="fund-paid" type="number" step="0.01" min="0" value="0"
-                           class="w-full h-11 pl-8 pr-4 border border-violet-200 focus:border-violet-400 rounded-2xl text-sm outline-none"
+                           class="field-liquid w-full h-11 pl-8 pr-4 text-sm outline-none border-violet-200/60"
                            oninput="syncFundMaxHint()">
                   </div>
                   <div id="fund-paid-hint" class="text-[10px] text-violet-600 font-medium whitespace-nowrap min-w-[72px] text-right">餘額充足</div>
@@ -462,24 +760,24 @@
                   <label class="block text-xs font-semibold text-slate-600">呢筆錢分俾邊啲人？</label>
                   <div class="flex gap-1">
                     <button type="button" onclick="selectAllSplit(true)"
-                            class="text-[10px] px-2.5 h-6 rounded-xl bg-violet-100 text-violet-700 font-medium active:bg-violet-200">全選</button>
+                            class="text-[10px] px-2.5 h-6 glass-pill text-violet-700 font-medium pressable">全選</button>
                     <button type="button" onclick="selectAllSplit(false)"
-                            class="text-[10px] px-2.5 h-6 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">取消</button>
+                            class="text-[10px] px-2.5 h-6 glass-pill text-slate-600 font-medium pressable">取消</button>
                   </div>
                 </div>
                 
-                <div id="split-options" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-1 bg-slate-50 rounded-2xl border border-slate-100 min-h-[80px]">
+                <div id="split-options" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-1.5 rounded-[20px] min-h-[80px] bg-white/25 border border-white/40">
                   <!-- Checkboxes populated by JS -->
                 </div>
               </div>
               
               <div class="flex gap-2 mt-4">
                 <button type="button" onclick="cancelExpenseEdit()" id="cancel-edit-btn"
-                        class="hidden flex-1 h-11 text-sm font-semibold border border-slate-200 hover:bg-slate-50 rounded-2xl active:bg-slate-100">
+                        class="hidden flex-1 h-11 text-sm btn-liquid-ghost">
                   取消
                 </button>
                 <button type="submit" id="expense-submit-btn"
-                        class="flex-1 h-11 bg-violet-500 hover:bg-violet-600 active:bg-violet-700 transition-all text-white rounded-2xl text-sm font-bold shadow-sm">
+                        class="flex-1 h-11 btn-liquid text-sm font-bold">
                   新增開支
                 </button>
               </div>
@@ -489,7 +787,7 @@
         
         <!-- Expenses List -->
         <div class="flex flex-col min-h-0">
-          <div class="hk-card p-5 border border-slate-100 flex-1 flex flex-col min-h-0">
+          <div class="hk-card p-5 flex-1 flex flex-col min-h-0">
             <div class="flex items-center justify-between mb-3">
               <div class="section-title flex items-center gap-2">
                 <i class="fa-solid fa-clipboard-list"></i>
@@ -506,7 +804,7 @@
               <!-- Populated by JS -->
             </div>
             
-            <div id="expenses-empty" class="hidden flex-1 flex flex-col items-center justify-center text-center py-8 border border-dashed border-slate-200 rounded-2xl">
+            <div id="expenses-empty" class="hidden flex-1 flex flex-col items-center justify-center text-center py-8 border border-dashed border-white/50 rounded-[20px] bg-white/20">
               <i class="fa-solid fa-receipt text-3xl text-slate-300"></i>
               <p class="mt-2 text-sm text-slate-500">仲未有開支</p>
               <p class="text-xs text-slate-400">喺左邊加入第一筆記錄</p>
@@ -526,7 +824,7 @@
         
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <!-- Personal Balances -->
-          <div class="hk-card border border-slate-100 p-5">
+          <div class="hk-card p-5">
             <div class="text-sm font-semibold text-slate-700 mb-3">每人結餘</div>
             <div id="balances-list" class="space-y-2">
               <!-- Populated by JS -->
@@ -534,7 +832,7 @@
             <div id="balances-empty" class="hidden text-sm text-slate-400 py-2">暫未有數據</div>
 
             <button onclick="generateWhatsAppShare()" 
-                    class="w-full mt-4 flex items-center justify-center gap-2.5 h-12 bg-[#25D366] hover:bg-[#20bd5a] active:bg-[#1da851] text-white rounded-2xl text-sm font-bold shadow-md transition-all">
+                    class="w-full mt-4 flex items-center justify-center gap-2.5 h-12 text-sm font-bold text-white rounded-full transition-all pressable" style="background:linear-gradient(180deg,#34d399,#128C7E);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(18,140,126,.35);border:.5px solid rgba(255,255,255,.25)">
               <i class="fa-brands fa-whatsapp text-xl"></i>
               <span>分享結算結果</span>
             </button>
@@ -542,37 +840,37 @@
           </div>
           
           <!-- Suggested Settlements + 阿公操作 -->
-          <div class="hk-card border border-slate-100 p-5">
+          <div class="hk-card p-5">
             <div class="text-sm font-semibold text-slate-700 mb-3">建議還款方案（最少轉帳）</div>
             <div id="settlements-list" class="space-y-2">
               <!-- Populated by JS -->
             </div>
             <div id="settlements-empty" class="hidden">
-              <div class="flex items-center gap-2 text-violet-600 bg-violet-50 border border-violet-100 px-4 h-12 rounded-2xl text-sm">
+              <div class="flex items-center gap-2 text-violet-700 notice-glass px-4 h-12 rounded-full text-sm">
                 <i class="fa-solid fa-check-circle"></i>
                 <span class="font-medium">已經結清！大家兩清啦 🎉</span>
               </div>
             </div>
 
             <!-- 阿公模式：逐條揀選轉入 -->
-            <div id="fund-transfer-controls" class="mt-4 pt-4 border-t border-slate-100 hidden">
+            <div id="fund-transfer-controls" class="mt-4 pt-4 border-t border-white/40 hidden">
               <div class="flex items-center justify-between mb-2">
                 <div class="text-[10px] text-violet-700 font-medium">剔選想由阿公承擔嘅還款</div>
                 <div class="flex gap-1">
                   <button type="button" onclick="selectAllFundTransfers(true)"
-                          class="text-[10px] px-2.5 h-6 rounded-xl bg-violet-100 text-violet-700 font-medium active:bg-violet-200">全選</button>
+                          class="text-[10px] px-2.5 h-6 glass-pill text-violet-700 font-medium pressable">全選</button>
                   <button type="button" onclick="selectAllFundTransfers(false)"
-                          class="text-[10px] px-2.5 h-6 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">取消</button>
+                          class="text-[10px] px-2.5 h-6 glass-pill text-slate-600 font-medium pressable">取消</button>
                 </div>
               </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button onclick="markAsDirectlySettled()" 
-                        class="h-10 text-sm font-semibold border border-slate-300 hover:bg-slate-50 active:bg-slate-100 rounded-2xl transition-colors flex items-center justify-center gap-1.5">
+                        class="h-10 text-sm btn-liquid-ghost flex items-center justify-center gap-1.5">
                   <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
                   <span>完全結清（自己轉帳）</span>
                 </button>
                 <button id="transfer-selected-fund-btn" onclick="transferSelectedSettlementsToFund()" 
-                        class="min-h-10 py-2 text-sm font-bold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white rounded-2xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="min-h-10 py-2 text-sm font-bold btn-liquid flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                   <i class="fa-solid fa-coins shrink-0 text-base leading-none"></i>
                   <span class="text-center leading-tight">
                     <span class="block">轉入已選項目去阿公</span>
@@ -586,7 +884,7 @@
         </div>
 
         <!-- Person Breakdown -->
-        <div class="hk-card border border-slate-100 p-5 mt-4">
+        <div class="hk-card p-5 mt-4">
           <div class="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
             <i class="fa-solid fa-table-list text-violet-500"></i>
             <span>每人明細（已付 / 應付 / 結餘）</span>
@@ -610,9 +908,9 @@
 
   <!-- Create Activity Modal -->
   <div id="create-modal" onclick="if (event.target.id === 'create-modal') hideCreateModal()" 
-       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+       class="modal-overlay hidden fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopImmediatePropagation()" 
-         class="modal-sheet w-full sm:w-[440px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+         class="modal-sheet glass-sheet w-full sm:w-[440px] rounded-t-[28px] sm:rounded-[28px] p-6 sm:p-7">
       <div class="flex justify-between items-center mb-5">
         <div class="font-bold text-xl">建立新活動</div>
         <button onclick="hideCreateModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
@@ -621,7 +919,7 @@
       <div>
         <label class="block text-sm font-semibold mb-1.5 text-slate-600">活動名稱</label>
         <input id="modal-activity-name" type="text" placeholder="例如：週五唱K + 食飯" 
-               class="w-full border border-slate-200 focus:border-violet-400 h-12 rounded-2xl px-4 text-base outline-none">
+               class="field-liquid w-full h-12 text-base outline-none">
         <p class="text-xs text-slate-500 mt-1.5">之後可以隨時改名同加入朋友</p>
       </div>
 
@@ -642,18 +940,18 @@
       
       <div class="mt-6 flex gap-3">
         <button onclick="hideCreateModal()" 
-                class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+                class="flex-1 h-12 btn-liquid-ghost text-sm">取消</button>
         <button onclick="createActivityFromModal()" 
-                class="flex-1 h-12 bg-violet-500 hover:bg-violet-600 active:bg-violet-700 text-white rounded-2xl font-bold text-sm transition-all">建立活動</button>
+                class="flex-1 h-12 btn-liquid font-bold text-sm">建立活動</button>
       </div>
     </div>
   </div>
 
   <!-- Edit Activity Dates Modal -->
   <div id="edit-dates-modal" onclick="if (event.target.id === 'edit-dates-modal') hideEditDatesModal()" 
-       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+       class="modal-overlay hidden fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopImmediatePropagation()" 
-         class="modal-sheet w-full sm:w-[400px] rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-2xl">
+         class="modal-sheet glass-sheet w-full sm:w-[400px] rounded-t-[28px] sm:rounded-[28px] p-6 sm:p-7">
       <div class="flex justify-between items-center mb-5 shrink-0">
         <div class="font-bold text-xl">活動日期</div>
         <button onclick="hideEditDatesModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
@@ -671,14 +969,14 @@
       </div>
       <p class="text-[10px] text-slate-400 mt-4">只填開始 = 單日活動。跨多日 = 外遊。</p>
 
-      <div class="mt-6 pt-2 border-t border-slate-100 flex flex-col gap-2 shrink-0">
+      <div class="mt-6 pt-2 border-t border-white/40 flex flex-col gap-2 shrink-0">
         <button onclick="saveActivityDates()" 
-                class="w-full h-12 bg-violet-500 hover:bg-violet-600 text-white rounded-2xl font-bold text-sm">儲存</button>
+                class="w-full h-12 btn-liquid font-bold text-sm">儲存</button>
         <div class="grid grid-cols-2 gap-2">
           <button onclick="hideEditDatesModal()" 
-                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+                  class="h-12 btn-liquid-ghost text-sm">取消</button>
           <button onclick="clearActivityDates()" 
-                  class="h-12 rounded-2xl border border-slate-200 font-semibold text-sm text-slate-500">清除</button>
+                  class="h-12 btn-liquid-ghost text-sm text-slate-500">清除</button>
         </div>
       </div>
     </div>
@@ -686,9 +984,9 @@
 
   <!-- 阿公管理 Modal -->
   <div id="fund-modal" onclick="if (event.target.id === 'fund-modal') hideFundManagerModal()" 
-       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+       class="modal-overlay hidden fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopImmediatePropagation()" 
-         class="w-full sm:w-[460px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+         class="glass-sheet w-full sm:w-[460px] rounded-t-[28px] sm:rounded-[28px] p-6 sm:p-7">
       
       <div class="flex justify-between items-start mb-4">
         <div>
@@ -702,7 +1000,7 @@
       </div>
 
       <!-- Big Balance -->
-      <div class="hk-card bg-violet-50 border-violet-100 p-5 mb-5 text-center">
+      <div class="hk-card fund-glass p-5 mb-5 text-center">
         <div class="text-xs font-semibold text-violet-600 tracking-wider">目前餘額</div>
         <div id="fund-modal-balance" class="text-4xl font-bold tabular-nums text-violet-700 mt-1">HK$0.00</div>
       </div>
@@ -719,33 +1017,33 @@
             <div class="relative">
               <div class="absolute left-3 top-1/2 -mt-2 text-violet-500">$</div>
               <input id="fund-deposit-input" type="number" step="0.01" min="0" placeholder="輸入金額" 
-                     class="w-full h-11 pl-8 pr-4 border border-violet-200 focus:border-violet-400 rounded-2xl text-base outline-none">
+                     class="field-liquid w-full h-11 pl-8 pr-4 text-base outline-none">
             </div>
           </div>
 
           <!-- 快速按鈕 - 一行排列，與提取側一致 -->
           <div class="grid grid-cols-4 gap-2 mb-4">
             <button onclick="quickAdjustFund(50)" 
-                    class="py-2 text-sm border border-violet-200 bg-white text-violet-600 rounded-2xl active:bg-violet-50 hover:bg-violet-50 transition-colors">
+                    class="py-2 text-sm glass-control text-violet-600 pressable font-medium">
               +50
             </button>
             <button onclick="quickAdjustFund(100)" 
-                    class="py-2 text-sm border border-violet-200 bg-white text-violet-600 rounded-2xl active:bg-violet-50 hover:bg-violet-50 transition-colors">
+                    class="py-2 text-sm glass-control text-violet-600 pressable font-medium">
               +100
             </button>
             <button onclick="quickAdjustFund(200)" 
-                    class="py-2 text-sm border border-violet-200 bg-white text-violet-600 rounded-2xl active:bg-violet-50 hover:bg-violet-50 transition-colors">
+                    class="py-2 text-sm glass-control text-violet-600 pressable font-medium">
               +200
             </button>
             <button onclick="quickAdjustFund(500)" 
-                    class="py-2 text-sm border border-violet-200 bg-white text-violet-600 rounded-2xl active:bg-violet-50 hover:bg-violet-50 transition-colors">
+                    class="py-2 text-sm glass-control text-violet-600 pressable font-medium">
               +500
             </button>
           </div>
 
           <!-- 大綠色「存入」按鈕 - 全寬、與提取側同高度 -->
           <button onclick="depositFromInput()" 
-                  class="w-full h-12 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 text-white rounded-2xl text-sm font-bold shadow-sm transition-all">
+                  class="w-full h-12 btn-liquid text-sm font-bold">
             存入
           </button>
         </div>
@@ -761,29 +1059,29 @@
             <div class="relative">
               <div class="absolute left-3 top-1/2 -mt-2 text-rose-500">$</div>
               <input id="fund-withdraw-input" type="number" step="0.01" min="0" placeholder="輸入金額" 
-                     class="w-full h-11 pl-8 pr-4 border border-rose-200 focus:border-rose-400 rounded-2xl text-base outline-none">
+                     class="field-liquid w-full h-11 pl-8 pr-4 text-base outline-none border-rose-200/50">
             </div>
           </div>
 
           <!-- 快速按鈕 - 一行排列，與存入側一致 -->
           <div class="grid grid-cols-3 gap-2 mb-4">
             <button onclick="quickAdjustFund(-50)" 
-                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+                    class="py-2 text-sm glass-control text-rose-600 pressable font-medium">
               -50
             </button>
             <button onclick="quickAdjustFund(-100)" 
-                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+                    class="py-2 text-sm glass-control text-rose-600 pressable font-medium">
               -100
             </button>
             <button onclick="quickAdjustFund(-200)" 
-                    class="py-2 text-sm border border-rose-200 bg-white text-rose-600 rounded-2xl active:bg-rose-50 hover:bg-rose-50 transition-colors">
+                    class="py-2 text-sm glass-control text-rose-600 pressable font-medium">
               -200
             </button>
           </div>
 
           <!-- 大紅色「提取」按鈕 - 全寬、與存入側同高度 -->
           <button onclick="withdrawFromInput()" 
-                  class="w-full h-12 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white rounded-2xl text-sm font-bold shadow-sm transition-all">
+                  class="w-full h-12 btn-liquid-danger text-sm font-bold pressable">
             提取
           </button>
         </div>
@@ -797,11 +1095,11 @@
 
   <!-- 接手記帳 Modal -->
   <div id="import-activity-modal" onclick="if (event.target.id === 'import-activity-modal') hideImportActivityModal()" 
-       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+       class="modal-overlay hidden fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopImmediatePropagation()" 
-         class="w-full sm:w-[520px] max-h-[90vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-xl">
+         class="glass-sheet w-full sm:w-[520px] max-h-[90vh] flex flex-col rounded-t-[28px] sm:rounded-[28px]">
       
-      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-slate-100">
+      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-white/40">
         <div class="flex justify-between items-start">
           <div>
             <div class="flex items-center gap-2">
@@ -815,7 +1113,7 @@
       </div>
 
       <div class="flex-1 min-h-0 overflow-y-auto px-6 sm:px-7 py-4 space-y-4">
-        <div class="px-3 py-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/15 text-xs text-slate-700 leading-relaxed space-y-2">
+        <div class="px-3 py-3 rounded-[18px] wa-glass text-xs text-slate-700 leading-relaxed space-y-2">
           <div class="font-semibold text-[#128C7E]">點樣接手？</div>
           <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-[#25D366] text-white text-[10px] font-bold flex items-center justify-center">1</span><span>打開朋友 send 嘅 WhatsApp 訊息</span></div>
           <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-[#25D366] text-white text-[10px] font-bold flex items-center justify-center">2</span><span>長撳條訊息 → <strong>複製</strong>（成段複製就得）</span></div>
@@ -826,35 +1124,35 @@
           <label class="block text-sm font-semibold text-slate-600 mb-1.5">貼上朋友 send 嘅內容</label>
           <textarea id="import-activity-json" rows="5" placeholder="長撳呢度 → 貼上 WhatsApp 複製嘅內容…"
                     oninput="previewImportActivity()"
-                    class="w-full px-4 py-3 border border-slate-200 focus:border-[#25D366] rounded-2xl text-sm outline-none resize-none"></textarea>
+                    class="field-liquid w-full py-3 text-sm outline-none resize-none min-h-[7.5rem] h-auto"></textarea>
         </div>
 
         <input id="import-activity-file" type="file" accept=".json,application/json" class="hidden" onchange="loadImportActivityFile(event)">
 
-        <div id="import-activity-preview-wrap" class="hidden px-3 py-2.5 rounded-2xl bg-violet-50 border border-violet-100 text-xs text-violet-800 leading-relaxed">
+        <div id="import-activity-preview-wrap" class="hidden px-3 py-2.5 rounded-[18px] notice-glass text-xs text-violet-800 leading-relaxed">
           <div id="import-activity-preview"></div>
         </div>
 
-        <div id="import-activity-conflict-wrap" class="hidden px-3 py-2.5 rounded-2xl bg-amber-50 border border-amber-100 text-xs text-amber-800 leading-relaxed">
+        <div id="import-activity-conflict-wrap" class="hidden px-3 py-2.5 rounded-[18px] text-xs text-amber-900 leading-relaxed" style="background:rgba(251,191,36,.12);border:.5px solid rgba(251,191,36,.28);backdrop-filter:blur(12px)">
           <i class="fa-solid fa-triangle-exclamation mr-1"></i>
           <span id="import-activity-conflict-text"></span>
         </div>
 
-        <div class="px-3 py-2.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs text-slate-600 leading-relaxed">
+        <div class="px-3 py-2.5 rounded-[18px] glass-control text-xs text-slate-600 leading-relaxed">
           <i class="fa-solid fa-circle-info mr-1 text-slate-400"></i>
           接手會連埋阿公餘額一齊更新。如果之前接過手，用「更新現有活動」覆蓋舊記錄。
         </div>
       </div>
 
-      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2">
+      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-white/40 flex flex-col sm:flex-row gap-2">
         <button onclick="hideImportActivityModal()" 
-                class="sm:flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+                class="sm:flex-1 h-12 btn-liquid-ghost text-sm">取消</button>
         <button id="import-activity-new-btn" onclick="confirmImportActivity('new')" disabled
-                class="sm:flex-1 h-12 bg-[#25D366] hover:bg-[#20bd5a] active:bg-[#1da851] disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all">
+                class="sm:flex-1 h-12 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full font-bold text-sm pressable" style="background:linear-gradient(180deg,#34d399,#128C7E);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(18,140,126,.3)">
           開始接手
         </button>
         <button id="import-activity-replace-btn" onclick="confirmImportActivity('replace')" disabled
-                class="hidden sm:flex-1 h-12 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-sm transition-all">
+                class="hidden sm:flex-1 h-12 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full font-bold text-sm pressable" style="background:linear-gradient(180deg,#fbbf24,#d97706);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(217,119,6,.3)">
           更新現有活動
         </button>
       </div>
@@ -863,12 +1161,12 @@
 
   <!-- 複製俾朋友成功 Modal -->
   <div id="export-share-modal" onclick="if (event.target.id === 'export-share-modal') hideExportShareModal()" 
-       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+       class="modal-overlay hidden fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopImmediatePropagation()" 
-         class="w-full sm:w-[460px] bg-white rounded-t-3xl sm:rounded-3xl p-6 sm:p-7 shadow-xl">
+         class="glass-sheet w-full sm:w-[460px] rounded-t-[28px] sm:rounded-[28px] p-6 sm:p-7">
       
       <div class="text-center mb-5">
-        <div class="mx-auto w-14 h-14 bg-[#25D366]/15 rounded-2xl flex items-center justify-center mb-3">
+        <div class="mx-auto w-14 h-14 rounded-[22%] flex items-center justify-center mb-3 border border-[#25D366]/25" style="background:rgba(37,211,102,.15);backdrop-filter:blur(12px)">
           <i class="fa-solid fa-check text-[#25D366] text-2xl"></i>
         </div>
         <div class="font-bold text-xl text-slate-900">已複製記帳資料！</div>
@@ -876,27 +1174,27 @@
       </div>
 
       <div class="space-y-3 mb-5">
-        <div class="flex items-start gap-3 p-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/10">
+        <div class="flex items-start gap-3 p-3 rounded-[18px] wa-glass">
           <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">1</span>
           <div class="text-sm text-slate-700 pt-0.5">打開 <strong>WhatsApp</strong>，搵個 group 或者朋友</div>
         </div>
-        <div class="flex items-start gap-3 p-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/10">
+        <div class="flex items-start gap-3 p-3 rounded-[18px] wa-glass">
           <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">2</span>
           <div class="text-sm text-slate-700 pt-0.5">長撳輸入框 → <strong>貼上</strong> → Send</div>
         </div>
-        <div class="flex items-start gap-3 p-3 rounded-2xl bg-[#25D366]/5 border border-[#25D366]/10">
+        <div class="flex items-start gap-3 p-3 rounded-[18px] wa-glass">
           <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">3</span>
           <div class="text-sm text-slate-700 pt-0.5">朋友開神算子 → 撳「<strong>接手記帳</strong>」→ 長撳你條訊息複製 → 貼上</div>
         </div>
       </div>
 
-      <div class="px-3 py-2.5 rounded-2xl bg-violet-50 border border-violet-100 text-xs text-violet-700 leading-relaxed mb-5">
+      <div class="px-3 py-2.5 rounded-[18px] notice-glass text-xs text-violet-700 leading-relaxed mb-5">
         <i class="fa-solid fa-circle-info mr-1"></i>
         撳「複製俾朋友」就已經複製好，直接去 WhatsApp 貼上就得。
       </div>
 
       <button onclick="hideExportShareModal()" 
-              class="w-full h-12 bg-[#25D366] hover:bg-[#20bd5a] active:bg-[#1da851] text-white rounded-2xl font-bold text-sm transition-all">
+              class="w-full h-12 text-white rounded-full font-bold text-sm pressable" style="background:linear-gradient(180deg,#34d399,#128C7E);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(18,140,126,.3)">
         明白晒！
       </button>
     </div>
@@ -904,11 +1202,11 @@
 
   <!-- Bug Report Modal -->
   <div id="bug-report-modal" onclick="if (event.target.id === 'bug-report-modal') hideBugReportModal()" 
-       class="modal-overlay hidden fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center">
+       class="modal-overlay hidden fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopImmediatePropagation()" 
-         class="w-full sm:w-[520px] max-h-[90vh] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-xl">
+         class="glass-sheet w-full sm:w-[520px] max-h-[90vh] flex flex-col rounded-t-[28px] sm:rounded-[28px]">
       
-      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-slate-100">
+      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-white/40">
         <div class="flex justify-between items-start">
           <div>
             <div class="flex items-center gap-2">
@@ -925,31 +1223,31 @@
         <div>
           <label class="block text-sm font-semibold text-slate-600 mb-1.5">問題描述（必填）</label>
           <textarea id="bug-report-desc" rows="3" placeholder="例如：小美應收 $50 但顯示 $48.33，好似分錢計錯咗"
-                    class="w-full px-4 py-3 border border-slate-200 focus:border-amber-400 rounded-2xl text-sm outline-none resize-none"></textarea>
+                    class="field-liquid w-full py-3 text-sm outline-none resize-none min-h-[5rem] h-auto"></textarea>
         </div>
 
         <div>
           <label class="block text-sm font-semibold text-slate-600 mb-1.5">聯絡方式（選填）</label>
           <input id="bug-report-contact" type="text" placeholder="例如：WhatsApp / Telegram 名"
-                 class="w-full h-11 px-4 border border-slate-200 focus:border-amber-400 rounded-2xl text-sm outline-none">
+                 class="field-liquid w-full h-11 text-sm outline-none">
         </div>
 
-        <div class="px-3 py-2.5 rounded-2xl bg-amber-50 border border-amber-100 text-xs text-amber-800 leading-relaxed">
+        <div class="px-3 py-2.5 rounded-[18px] text-xs text-amber-900 leading-relaxed" style="background:rgba(251,191,36,.12);border:.5px solid rgba(251,191,36,.28);backdrop-filter:blur(12px)">
           <i class="fa-solid fa-shield-halved mr-1"></i>
           報告會包含活動、開支、結算結果同裝置資訊，<span class="font-semibold">唔會</span>自動傳送出去 — 只會複製到剪貼簿，你再 paste 畀開發者 (Nik)。
         </div>
 
         <div id="bug-report-preview-wrap" class="hidden">
           <label class="block text-sm font-semibold text-slate-600 mb-1.5">報告預覽</label>
-          <pre id="bug-report-preview" class="text-[10px] leading-relaxed bg-slate-50 border border-slate-200 rounded-2xl p-3 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-slate-600"></pre>
+          <pre id="bug-report-preview" class="text-[10px] leading-relaxed glass-control rounded-[18px] p-3 max-h-40 overflow-auto whitespace-pre-wrap break-words font-mono text-slate-600"></pre>
         </div>
       </div>
 
-      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-slate-100 flex gap-3">
+      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-white/40 flex gap-3">
         <button onclick="hideBugReportModal()" 
-                class="flex-1 h-12 rounded-2xl border border-slate-200 font-semibold text-sm">取消</button>
+                class="flex-1 h-12 btn-liquid-ghost text-sm">取消</button>
         <button onclick="generateAndCopyBugReport()" 
-                class="flex-1 h-12 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+                class="flex-1 h-12 text-white rounded-full font-bold text-sm flex items-center justify-center gap-2 pressable" style="background:linear-gradient(180deg,#fbbf24,#d97706);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(217,119,6,.3)">
           <i class="fa-solid fa-copy"></i>
           <span>生成並複製報告</span>
         </button>
@@ -958,7 +1256,7 @@
   </div>
 
   <!-- Toast -->
-  <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center"></div>
+  <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center px-4" style="bottom: max(1.5rem, env(safe-area-inset-bottom))"></div>
 
   <script>
     // ==================== State ====================
@@ -968,7 +1266,7 @@
 
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
-    const APP_VERSION = '1.1.0';
+    const APP_VERSION = '1.2.0';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
@@ -1128,12 +1426,8 @@
     // ==================== Helpers ====================
     function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
-      const colors = type === 'error' 
-        ? 'bg-red-600 text-white' 
-        : 'bg-slate-900 text-white';
-      
       const toast = document.createElement('div');
-      toast.className = `${colors} px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 text-sm font-medium animate-[fadeIn_0.1s]`;
+      toast.className = `toast-liquid ${type === 'error' ? 'error' : ''} px-5 py-3 flex items-center gap-2 text-sm font-medium`;
       toast.innerHTML = `
         <span>${message}</span>
       `;
@@ -1219,8 +1513,8 @@
     function getActivityDateKind(act) {
       const days = getActivityDayCount(act);
       if (days <= 0) return null;
-      if (days === 1) return { label: '單日', className: 'bg-slate-100 text-slate-600' };
-      return { label: `外遊 · ${days}日`, className: 'bg-sky-100 text-sky-700' };
+      if (days === 1) return { label: '單日', className: 'glass-pill text-slate-600 px-1.5' };
+      return { label: `外遊 · ${days}日`, className: 'glass-pill text-sky-700 px-1.5' };
     }
 
     function renderActivityDateKindBadge(act, size = 'sm') {
@@ -1405,7 +1699,7 @@
           activity.participants.forEach(p => people.add(p));
           
           const card = document.createElement('div');
-          card.className = 'hk-card border border-slate-100 p-4 cursor-pointer active:scale-[0.985] transition-all hover:border-violet-200';
+          card.className = 'hk-card p-4 cursor-pointer active:scale-[0.985] transition-all pressable';
           card.onclick = () => selectActivity(activity.id);
           
           const dateRange = formatActivityDateRange(activity);
@@ -1423,7 +1717,7 @@
                 </div>` : ''}
               </div>
               <button onclick="event.stopImmediatePropagation(); deleteActivity('${activity.id}');" 
-                      class="w-8 h-8 -mr-1 -mt-1 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl shrink-0">
+                      class="w-8 h-8 -mr-1 -mt-1 flex items-center justify-center text-slate-400 hover:text-red-500 glass-control shrink-0">
                 <i class="fa-solid fa-trash text-xs"></i>
               </button>
             </div>
@@ -1587,10 +1881,10 @@
       
       act.participants.forEach(name => {
         const badge = document.createElement('div');
-        badge.className = 'participant-badge inline-flex items-center gap-1.5 pl-3.5 pr-2 py-1 bg-violet-100 text-violet-700 rounded-2xl text-sm font-medium';
+        badge.className = 'participant-badge inline-flex items-center gap-1.5 pl-3.5 pr-2 py-1 text-sm font-medium';
         badge.innerHTML = `
           <span>${escapeHtml(name)}</span>
-          <button class="w-5 h-5 flex items-center justify-center hover:bg-violet-200 rounded-xl text-violet-600" 
+          <button class="w-5 h-5 flex items-center justify-center hover:bg-violet-200/60 rounded-full text-violet-600" 
                   onclick="event.stopImmediatePropagation(); removeParticipant('${escapeHtml(name)}')">
             <i class="fa-solid fa-times text-xs"></i>
           </button>
@@ -1694,7 +1988,7 @@
         const isChecked = toSelect.includes(name);
         
         const wrapper = document.createElement('label');
-        wrapper.className = `flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer border box-border ${isChecked ? 'bg-white border-violet-300' : 'bg-white border-slate-200 hover:bg-slate-100'} transition-colors`;
+        wrapper.className = `flex items-center gap-2 px-3 py-2 rounded-2xl cursor-pointer border box-border transition-colors ${isChecked ? 'bg-white/70 border-violet-300 shadow-sm' : 'bg-white/40 border-white/50 hover:bg-white/60'}`;
         
         wrapper.innerHTML = `
           <input type="checkbox" value="${escapeHtml(name)}" ${isChecked ? 'checked' : ''} 
@@ -1705,7 +1999,10 @@
         const cb = wrapper.querySelector('input');
         const syncSplitStyle = () => {
           wrapper.classList.toggle('border-violet-300', cb.checked);
-          wrapper.classList.toggle('border-slate-200', !cb.checked);
+          wrapper.classList.toggle('bg-white/70', cb.checked);
+          wrapper.classList.toggle('shadow-sm', cb.checked);
+          wrapper.classList.toggle('border-white/50', !cb.checked);
+          wrapper.classList.toggle('bg-white/40', !cb.checked);
         };
         cb.addEventListener('change', syncSplitStyle);
         
@@ -1721,7 +2018,10 @@
         const label = cb.closest('label');
         if (label) {
           label.classList.toggle('border-violet-300', checked);
-          label.classList.toggle('border-slate-200', !checked);
+          label.classList.toggle('bg-white/70', checked);
+          label.classList.toggle('shadow-sm', checked);
+          label.classList.toggle('border-white/50', !checked);
+          label.classList.toggle('bg-white/40', !checked);
         }
       });
     }
@@ -1954,13 +2254,13 @@
           if (payerInSplit && payerShare > 0) {
             const netAdvance = Math.round((amountToSplit - payerShare) * 100) / 100;
             payerLine = `
-              <div class="mt-1.5 text-[10px] text-amber-800 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-xl leading-relaxed">
+              <div class="mt-1.5 text-[10px] text-amber-900/90 bg-amber-50/70 border border-amber-200/40 px-2.5 py-1.5 rounded-xl leading-relaxed">
                 <i class="fa-solid fa-wallet mr-1 text-amber-500"></i>
                 <span class="font-medium">${escapeHtml(exp.payer)}</span> 已付 ${formatMoney(exp.amount)}，抵扣自己份 ${formatMoney(payerShare)}，淨幫墊 ${formatMoney(netAdvance)}
               </div>`;
           } else if (!payerInSplit) {
             payerLine = `
-              <div class="mt-1.5 text-[10px] text-amber-800 bg-amber-50 border border-amber-100 px-2.5 py-1.5 rounded-xl leading-relaxed">
+              <div class="mt-1.5 text-[10px] text-amber-900/90 bg-amber-50/70 border border-amber-200/40 px-2.5 py-1.5 rounded-xl leading-relaxed">
                 <i class="fa-solid fa-wallet mr-1 text-amber-500"></i>
                 <span class="font-medium">${escapeHtml(exp.payer)}</span> 已付 ${formatMoney(exp.amount)}，全額幫墊 ${formatMoney(amountToSplit)}（唔計自己份）
               </div>`;
@@ -1972,14 +2272,14 @@
           : `分 ${people.length} 人 • ${formatSharesDisplay(shares, people)}`;
 
         const card = document.createElement('div');
-        card.className = 'expense-card bg-slate-50 border border-slate-100 rounded-2xl p-3.5 flex gap-3 items-start';
+        card.className = 'expense-card p-3.5 flex gap-3 items-start';
         
         card.innerHTML = `
           <div class="flex-1 min-w-0">
             <div class="font-semibold text-base leading-tight">${escapeHtml(exp.description)}</div>
             
             <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-              <div class="inline-flex items-center px-2.5 py-0.5 bg-amber-100 text-amber-700 rounded-xl font-medium">
+              <div class="inline-flex items-center px-2.5 py-0.5 glass-pill text-amber-800 font-medium bg-amber-100/50">
                 <i class="fa-solid fa-user mr-1.5 text-amber-500"></i>
                 <span>${escapeHtml(exp.payer)} 俾</span>
               </div>
@@ -1988,7 +2288,7 @@
                 ${formatMoney(exp.amount)}
               </div>
               ${fundPaid > 0.005 ? `
-              <div class="inline-flex items-center px-2 py-0.5 bg-violet-100 text-violet-700 rounded-xl text-[10px] font-medium">
+              <div class="inline-flex items-center px-2 py-0.5 glass-pill text-violet-700 text-[10px] font-medium">
                 <i class="fa-solid fa-coins mr-1"></i>
                 <span>阿公 ${formatMoney(fundPaid)}</span>
               </div>` : ''}
@@ -2004,11 +2304,11 @@
           
           <div class="flex flex-col gap-1 items-end pt-0.5 shrink-0">
             <button onclick="editExpense('${exp.id}')" 
-                    class="w-8 h-8 flex items-center justify-center text-violet-500 hover:bg-violet-50 rounded-xl">
+                    class="w-8 h-8 flex items-center justify-center text-violet-500 glass-control">
               <i class="fa-solid fa-pen text-xs"></i>
             </button>
             <button onclick="deleteExpense('${exp.id}')" 
-                    class="w-8 h-8 flex items-center justify-center text-red-400 hover:bg-red-50 hover:text-red-500 rounded-xl">
+                    class="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-500 glass-control">
               <i class="fa-solid fa-trash text-xs"></i>
             </button>
           </div>
@@ -2195,7 +2495,7 @@
         if (abs < 0.01) {
           // Show as settled
           const row = document.createElement('div');
-          row.className = `flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-100`;
+          row.className = `flex items-center justify-between px-3 py-2 rounded-2xl glass-control`;
           row.innerHTML = `
             <div class="font-medium">${escapeHtml(name)}</div>
             <div class="text-right">
@@ -2236,7 +2536,7 @@
       
       pending.forEach(s => {
         const row = document.createElement('label');
-        row.className = 'settlement-row flex items-center gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors';
+        row.className = 'settlement-row flex items-center gap-3 px-3 py-2.5 rounded-2xl cursor-pointer';
         
         row.innerHTML = `
           <input type="checkbox"
@@ -2253,7 +2553,7 @@
           <div class="flex items-center gap-2 shrink-0">
             <div class="font-bold tabular-nums text-lg text-slate-800">${formatMoney(s.amount)}</div>
             <button type="button"
-                    class="copy-settlement-btn w-7 h-7 flex items-center justify-center text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-lg">
+                    class="copy-settlement-btn w-7 h-7 flex items-center justify-center text-slate-400 hover:text-violet-600 glass-control">
               <i class="fa-solid fa-copy text-xs"></i>
             </button>
           </div>
@@ -2270,7 +2570,7 @@
 
       transferred.forEach(t => {
         const row = document.createElement('div');
-        row.className = 'flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-violet-100 bg-violet-50';
+        row.className = 'flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl notice-glass';
         
         row.innerHTML = `
           <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -2359,7 +2659,7 @@
         const isPositive = balance >= 0.005;
 
         const row = document.createElement('div');
-        row.className = `px-3 py-3 rounded-2xl border ${isSettled ? 'bg-slate-50 border-slate-100' : isPositive ? 'bg-violet-50/50 border-violet-100' : 'bg-red-50/40 border-red-100'}`;
+        row.className = `px-3 py-3 rounded-2xl border ${isSettled ? 'glass-control' : isPositive ? 'balance-positive' : 'balance-negative'}`;
 
         row.innerHTML = `
           <div class="flex items-center justify-between gap-3 mb-2">
@@ -2374,11 +2674,11 @@
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2 text-[11px]">
-            <div class="px-2.5 py-1.5 rounded-xl bg-white/80 border border-slate-100">
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/50 border border-white/50">
               <div class="text-slate-400">已付</div>
               <div class="font-semibold tabular-nums text-slate-700 mt-0.5">${formatMoney(paid)}</div>
             </div>
-            <div class="px-2.5 py-1.5 rounded-xl bg-white/80 border border-slate-100">
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/50 border border-white/50">
               <div class="text-slate-400">應付份額</div>
               <div class="font-semibold tabular-nums text-slate-700 mt-0.5">${formatMoney(owed)}</div>
             </div>
