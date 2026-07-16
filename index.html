@@ -612,7 +612,7 @@
           <button onclick="exportCurrentActivity()" 
                   class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 glass-pill text-[#128C7E] font-semibold pressable border border-[#25D366]/20">
             <i class="fa-brands fa-whatsapp"></i>
-            <span>複製俾朋友</span>
+            <span>俾朋友接手</span>
           </button>
           <button onclick="deleteCurrentActivity()" 
                   class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 glass-pill text-red-600 font-medium pressable">
@@ -656,7 +656,7 @@
         <i class="fa-solid fa-mobile-screen text-violet-500 text-sm mt-0.5 shrink-0"></i>
         <p class="flex-1 text-xs leading-relaxed text-violet-700">
           呢個 app 資料只存在你自己部電話/電腦入面，唔會即時 share 畀其他人。
-          想交俾朋友接手？撳「<span class="font-semibold">複製俾朋友</span>」→ 去 WhatsApp <span class="font-semibold">貼上</span> send 就得。朋友喺活動列表撳「<span class="font-semibold">接手記帳</span>」貼返入去。
+          想交俾朋友接手？撳「<span class="font-semibold">俾朋友接手</span>」→ 去 WhatsApp <span class="font-semibold">貼上</span> send 就得。朋友喺活動列表撳「<span class="font-semibold">接手記帳</span>」貼返入去。
         </p>
         <button type="button" onclick="dismissLocalDataNotice()" aria-label="關閉提示"
                 class="w-6 h-6 -mr-1 -mt-0.5 shrink-0 flex items-center justify-center text-violet-400 hover:text-violet-700 glass-control pressable">
@@ -899,7 +899,8 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button id="mark-settled-btn" type="button" onclick="markSelectedSettlementsDirect()"
-                          class="min-h-10 py-2 text-sm btn-liquid-ghost flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                          class="min-h-10 py-2 text-sm font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed pressable rounded-full text-emerald-800"
+                          style="background:rgba(16,185,129,0.18);border:0.5px solid rgba(16,185,129,0.38);box-shadow:0 1px 0 rgba(255,255,255,0.45) inset;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)">
                     <i class="fa-solid fa-check shrink-0 text-xs"></i>
                     <span class="text-center leading-tight">
                       <span class="block font-semibold">標記已結清</span>
@@ -1231,7 +1232,7 @@
 
       <div class="px-3 py-2.5 rounded-[18px] notice-glass text-xs text-violet-700 leading-relaxed mb-5">
         <i class="fa-solid fa-circle-info mr-1"></i>
-        撳「複製俾朋友」就已經複製好，直接去 WhatsApp 貼上就得。
+        撳「俾朋友接手」就已經複製好，直接去 WhatsApp 貼上就得。
       </div>
 
       <button onclick="hideExportShareModal()" 
@@ -1308,7 +1309,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.3.4';
+    const APP_VERSION = '1.3.5';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
@@ -3019,7 +3020,7 @@ ${SHARE_DATA_END}`;
       if (data && typeof data.name === 'string' && Array.isArray(data.expenses)) {
         return data;
       }
-      throw new Error('呢段唔似記帳資料，請確認朋友係用「複製俾朋友」send 畀你嘅 WhatsApp 訊息');
+      throw new Error('呢段唔似記帳資料，請確認朋友係用「俾朋友接手」send 畀你嘅 WhatsApp 訊息');
     }
 
     function normalizeImportedActivity(raw) {
@@ -3317,7 +3318,7 @@ ${SHARE_DATA_END}`;
       }
 
       text += `\n${divider}\n`;
-      text += `🔗 想交俾下一位接手？撳「複製俾朋友」→ WhatsApp 貼上 send 就得。接手人撳「接手記帳」貼返入去。\n`;
+      text += `🔗 想交俾下一位接手？撳「俾朋友接手」→ WhatsApp 貼上 send 就得。接手人撳「接手記帳」貼返入去。\n`;
       text += `📲 未用過神算子？開呢個連結：\n${SHARE_APP_URL}`;
 
       return text;
@@ -3827,7 +3828,7 @@ ${SHARE_DATA_END}`;
 
 文字太細？撳右上角「文字」掣，可喺 標準 / 大 / 特大 之間切換（會記住偏好）。
 
-想交俾朋友接手？撳「複製俾朋友」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得。
+想交俾朋友接手？撳「俾朋友接手」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得。
 
 覺得計錯數？撳右上角 🐛 報告問題。
 
