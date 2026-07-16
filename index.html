@@ -1308,7 +1308,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.3.3';
+    const APP_VERSION = '1.3.4';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
@@ -1420,13 +1420,18 @@
         modal.classList.add('hidden');
         unlockBodyScroll();
       }
+      const depositInput = document.getElementById('fund-deposit-input');
+      const withdrawInput = document.getElementById('fund-withdraw-input');
+      if (depositInput) depositInput.value = '';
+      if (withdrawInput) withdrawInput.value = '';
     }
 
+    /** @returns {boolean} 是否成功 */
     function adjustFund(amount, type) {
       const act = getCurrentActivity();
       if (!act) {
         showToast('請先揀一個活動', 'error');
-        return;
+        return false;
       }
       let balance = ensureFundBalance(act);
       if (type === 'deposit') {
@@ -1434,21 +1439,22 @@
       } else {
         if (amount > balance + 0.005) {
           showToast('阿公餘額唔夠提取', 'error');
-          return;
+          return false;
         }
         balance -= amount;
       }
       setFundBalance(balance);
       updateFundDisplays();
       showToast(`${type === 'deposit' ? '已存入阿公' : '已從阿公提取'} ${formatMoney(amount)}`);
+      return true;
     }
 
     function quickAdjustFund(delta) {
-      if (delta > 0) {
-        adjustFund(delta, 'deposit');
-      } else {
-        adjustFund(-delta, 'withdraw');
-      }
+      // 快捷金額：完成後都關窗（同存入/提取一致）
+      const ok = delta > 0
+        ? adjustFund(delta, 'deposit')
+        : adjustFund(-delta, 'withdraw');
+      if (ok) hideFundManagerModal();
     }
 
     function depositFromInput() {
@@ -1458,8 +1464,9 @@
         showToast('請輸入有效金額', 'error');
         return;
       }
-      adjustFund(val, 'deposit');
-      input.value = '';
+      if (adjustFund(val, 'deposit')) {
+        hideFundManagerModal();
+      }
     }
 
     function withdrawFromInput() {
@@ -1469,8 +1476,9 @@
         showToast('請輸入有效金額', 'error');
         return;
       }
-      adjustFund(val, 'withdraw');
-      input.value = '';
+      if (adjustFund(val, 'withdraw')) {
+        hideFundManagerModal();
+      }
     }
 
     // ==================== Helpers ====================
