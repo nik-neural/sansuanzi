@@ -198,6 +198,37 @@
 
     .btn-liquid-ghost:active { transform: scale(0.97); }
 
+    /* 標記已結清 — 同 btn-liquid 等權重，綠色實心 */
+    .btn-liquid-settle {
+      background: linear-gradient(180deg, #34d399 0%, #059669 100%);
+      color: #fff;
+      border: 0.5px solid rgba(255, 255, 255, 0.35);
+      border-radius: var(--lg-radius-pill);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 6px 20px rgba(5, 150, 105, 0.32);
+      font-weight: 700;
+      transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-liquid-settle:hover {
+      filter: brightness(1.05);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 8px 24px rgba(5, 150, 105, 0.4);
+    }
+
+    .btn-liquid-settle:active {
+      transform: scale(0.97);
+      filter: brightness(0.97);
+    }
+
+    .btn-liquid-settle:disabled,
+    .btn-liquid:disabled {
+      filter: none;
+      opacity: 0.5;
+    }
+
     .btn-liquid-danger {
       background: linear-gradient(180deg, #fb7185 0%, #e11d48 100%);
       color: #fff;
@@ -935,16 +966,15 @@
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button id="mark-settled-btn" type="button" onclick="markSelectedSettlementsDirect()"
-                          class="min-h-10 py-2 text-sm font-semibold flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed pressable rounded-full text-emerald-800"
-                          style="background:rgba(16,185,129,0.18);border:0.5px solid rgba(16,185,129,0.38);box-shadow:0 1px 0 rgba(255,255,255,0.45) inset;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)">
-                    <i class="fa-solid fa-check shrink-0 text-xs"></i>
+                          class="min-h-11 py-2 text-sm font-bold btn-liquid-settle flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-check shrink-0 text-sm"></i>
                     <span class="text-center leading-tight">
-                      <span class="block font-semibold">標記已結清</span>
-                      <span class="block text-[10px] font-medium opacity-80">自己轉帳</span>
+                      <span class="block">標記已結清</span>
+                      <span class="block text-[10px] font-semibold opacity-90">自己轉帳</span>
                     </span>
                   </button>
                   <button id="transfer-selected-fund-btn" type="button" onclick="transferSelectedSettlementsToFund()" 
-                          class="min-h-10 py-2 text-sm font-bold btn-liquid flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                          class="min-h-11 py-2 text-sm font-bold btn-liquid flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="fa-solid fa-coins shrink-0 text-base leading-none"></i>
                     <span class="text-center leading-tight">
                       <span class="block">由阿公找數</span>
