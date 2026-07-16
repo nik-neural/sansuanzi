@@ -887,31 +887,36 @@
 
             <!-- 阿公模式：逐條揀選轉入 -->
             <div id="fund-transfer-controls" class="mt-4 pt-4 border-t border-white/40 hidden">
-              <div class="flex items-center justify-between mb-2">
-                <div class="text-[10px] text-violet-700 font-medium">剔選想由阿公承擔嘅還款</div>
-                <div class="flex gap-1">
-                  <button type="button" onclick="selectAllFundTransfers(true)"
-                          class="text-[10px] px-2.5 h-6 glass-pill text-violet-700 font-medium pressable">全選</button>
-                  <button type="button" onclick="selectAllFundTransfers(false)"
-                          class="text-[10px] px-2.5 h-6 glass-pill text-slate-600 font-medium pressable">取消</button>
+              <div id="fund-transfer-pending-ui">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="text-[10px] text-violet-700 font-medium">剔選想由阿公承擔嘅還款</div>
+                  <div class="flex gap-1">
+                    <button type="button" onclick="selectAllFundTransfers(true)"
+                            class="text-[10px] px-2.5 h-6 glass-pill text-violet-700 font-medium pressable">全選</button>
+                    <button type="button" onclick="selectAllFundTransfers(false)"
+                            class="text-[10px] px-2.5 h-6 glass-pill text-slate-600 font-medium pressable">取消</button>
+                  </div>
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button onclick="markAsDirectlySettled()" 
+                          class="h-10 text-sm btn-liquid-ghost flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                    <span>完全結清（自己轉帳）</span>
+                  </button>
+                  <button id="transfer-selected-fund-btn" onclick="transferSelectedSettlementsToFund()" 
+                          class="min-h-10 py-2 text-sm font-bold btn-liquid flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-coins shrink-0 text-base leading-none"></i>
+                    <span class="text-center leading-tight">
+                      <span class="block">轉入已選項目去阿公</span>
+                      <span id="transfer-selected-fund-amount" class="block text-[10px] font-semibold opacity-90 tabular-nums min-h-[14px]">&nbsp;</span>
+                    </span>
+                  </button>
+                </div>
+                <div class="text-[10px] text-center text-violet-600 mt-1.5">可以逐條揀，淨係轉入已剔選嘅還款去阿公。撳錯可喺已承擔嗰行撳「還原」。</div>
               </div>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button onclick="markAsDirectlySettled()" 
-                        class="h-10 text-sm btn-liquid-ghost flex items-center justify-center gap-1.5">
-                  <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
-                  <span>完全結清（自己轉帳）</span>
-                </button>
-                <button id="transfer-selected-fund-btn" onclick="transferSelectedSettlementsToFund()" 
-                        class="min-h-10 py-2 text-sm font-bold btn-liquid flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <i class="fa-solid fa-coins shrink-0 text-base leading-none"></i>
-                  <span class="text-center leading-tight">
-                    <span class="block">轉入已選項目去阿公</span>
-                    <span id="transfer-selected-fund-amount" class="block text-[10px] font-semibold opacity-90 tabular-nums min-h-[14px]">&nbsp;</span>
-                  </span>
-                </button>
+              <div id="fund-transfer-done-hint" class="hidden text-[10px] text-center text-violet-600">
+                以上已由阿公承擔。撳錯？每行有「還原」可撤銷。
               </div>
-              <div class="text-[10px] text-center text-violet-600 mt-1.5">可以逐條揀，淨係轉入已剔選嘅還款去阿公</div>
             </div>
           </div>
         </div>
@@ -1300,7 +1305,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.3.0';
+    const APP_VERSION = '1.3.1';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
@@ -2609,7 +2614,7 @@
         container.appendChild(row);
       });
 
-      transferred.forEach(t => {
+      transferred.forEach((t, idx) => {
         const row = document.createElement('div');
         row.className = 'flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl notice-glass';
         
@@ -2622,9 +2627,21 @@
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <div class="font-bold tabular-nums text-base text-violet-700">${formatMoney(t.amount)}</div>
-            <span class="text-[10px] font-medium text-violet-600 whitespace-nowrap">已由阿公承擔</span>
+            <span class="text-[10px] font-medium text-violet-600 whitespace-nowrap hidden sm:inline">已由阿公承擔</span>
+            <button type="button"
+                    class="undo-fund-transfer-btn shrink-0 text-[10px] sm:text-xs font-semibold px-2.5 h-7 glass-pill text-violet-700 hover:text-violet-900 pressable"
+                    title="還原呢筆阿公承擔"
+                    data-index="${idx}">
+              <i class="fa-solid fa-rotate-left mr-0.5"></i>還原
+            </button>
           </div>
         `;
+
+        row.querySelector('.undo-fund-transfer-btn').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          undoFundTransfer(idx);
+        });
         
         container.appendChild(row);
       });
@@ -2641,15 +2658,22 @@
     function updateFundTransferButtonState() {
       const act = getCurrentActivity();
       const controls = document.getElementById('fund-transfer-controls');
+      const pendingUi = document.getElementById('fund-transfer-pending-ui');
+      const doneHint = document.getElementById('fund-transfer-done-hint');
       const btn = document.getElementById('transfer-selected-fund-btn');
       const amountEl = document.getElementById('transfer-selected-fund-amount');
       if (!act || !controls || !btn || !amountEl) return;
 
       const pending = getPendingSettlements(act);
+      const transferred = ensureFundTransfers(act);
       const selected = getSelectedPendingSettlements();
       const selectedTotal = selected.reduce((sum, s) => sum + s.amount, 0);
 
-      controls.classList.toggle('hidden', pending.length === 0);
+      const hasAny = pending.length > 0 || transferred.length > 0;
+      controls.classList.toggle('hidden', !hasAny);
+      if (pendingUi) pendingUi.classList.toggle('hidden', pending.length === 0);
+      if (doneHint) doneHint.classList.toggle('hidden', !(pending.length === 0 && transferred.length > 0));
+
       btn.disabled = selected.length === 0;
       amountEl.textContent = selected.length > 0 ? formatMoney(selectedTotal) : '\u00a0';
     }
@@ -3256,14 +3280,38 @@ ${SHARE_DATA_END}`;
 
       setFundBalance(getFundBalance() + total);
       updateFundDisplays();
-      updateFundDisplays();
 
-      showToast(`已轉入阿公 ${formatMoney(total)}（${selected.length} 筆）`);
+      showToast(`已轉入阿公 ${formatMoney(total)}（${selected.length} 筆）· 可撳「還原」撤銷`);
       renderSettlement();
+    }
 
-      setTimeout(() => {
-        showToast('已選還款已由阿公承擔，其餘請大家自行轉帳');
-      }, 1800);
+    /** 還原一筆「已由阿公承擔」— 從 fundTransfers 移除，阿公扣返金額 */
+    function undoFundTransfer(index) {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const transfers = ensureFundTransfers(act);
+      if (index < 0 || index >= transfers.length) {
+        showToast('搵唔到呢筆記錄', 'error');
+        return;
+      }
+
+      const t = transfers[index];
+      const amount = Math.round((Number(t.amount) || 0) * 100) / 100;
+      const bal = getFundBalance();
+
+      let msg = `還原「${t.from} 要俾 ${t.to} ${formatMoney(amount)}」？\n阿公會扣返 ${formatMoney(amount)}，呢筆會變返待還款。`;
+      if (bal + 0.005 < amount) {
+        msg += `\n\n注意：阿公而家淨係 ${formatMoney(bal)}，少過呢筆金額，還原後阿公會變 $0。`;
+      }
+      if (!confirm(msg)) return;
+
+      transfers.splice(index, 1);
+      act.updatedAt = Date.now();
+      setFundBalance(bal - amount);
+      updateFundDisplays();
+      renderSettlement();
+      showToast(`已還原 · 阿公扣返 ${formatMoney(Math.min(amount, bal))}`);
     }
 
     // ==================== Demo Data ====================
