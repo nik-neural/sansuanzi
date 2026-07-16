@@ -459,6 +459,42 @@
     /* Specular press feedback */
     .pressable:active { transform: scale(0.97); }
 
+    /* 建議還款：綠色底 + 白色剔 */
+    .settlement-fund-checkbox {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 1.125rem;
+      height: 1.125rem;
+      margin: 0;
+      border-radius: 0.35rem;
+      border: 1.5px solid rgba(16, 185, 129, 0.55);
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .settlement-fund-checkbox:hover {
+      border-color: rgba(5, 150, 105, 0.75);
+      background: rgba(236, 253, 245, 0.95);
+    }
+
+    .settlement-fund-checkbox:checked {
+      background-color: #10b981;
+      border-color: #059669;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none'%3E%3Cpath d='M3.5 8.2L6.5 11.2L12.5 4.8' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-size: 0.75rem 0.75rem;
+      background-position: center;
+      background-repeat: no-repeat;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 2px 8px rgba(16, 185, 129, 0.35);
+    }
+
+    .settlement-fund-checkbox:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.28);
+    }
+
     @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
       .glass-nav, .hk-card, .glass-card, .modal-sheet, .glass-sheet,
       .glass-pill, .glass-control, .expense-card, .fund-glass {
@@ -2618,7 +2654,7 @@
         
         row.innerHTML = `
           <input type="checkbox"
-                 class="settlement-fund-checkbox w-4 h-4 accent-emerald-500 shrink-0"
+                 class="settlement-fund-checkbox shrink-0"
                  data-from="${escapeHtml(s.from)}"
                  data-to="${escapeHtml(s.to)}"
                  data-amount="${s.amount}"
