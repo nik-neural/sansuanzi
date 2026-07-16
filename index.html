@@ -39,12 +39,27 @@
       --lg-blur: 40px;
       --lg-saturate: 180%;
       --primary: #7c3aed;
+      --text-scale: 1;
       color-scheme: light;
     }
 
     * { -webkit-tap-highlight-color: transparent; }
 
-    html { height: 100%; }
+    html {
+      height: 100%;
+      /* rem-based Tailwind classes scale with root font-size */
+      font-size: calc(16px * var(--text-scale));
+    }
+
+    html[data-text-size="md"] { --text-scale: 1; }
+    html[data-text-size="lg"] { --text-scale: 1.125; }   /* ~18px base */
+    html[data-text-size="xl"] { --text-scale: 1.25; }    /* ~20px base */
+
+    /* Desktop default slightly larger when user hasn't picked (md) — still overrideable */
+    @media (min-width: 1024px) {
+      html[data-text-size="md"],
+      html:not([data-text-size]) { --text-scale: 1.0625; } /* ~17px */
+    }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
@@ -458,6 +473,21 @@
       }
     }
   </style>
+  <!-- Apply saved text size before paint to avoid flash -->
+  <script>
+    (function () {
+      try {
+        var s = localStorage.getItem('sansuanzi_text_size');
+        if (s === 'md' || s === 'lg' || s === 'xl') {
+          document.documentElement.setAttribute('data-text-size', s);
+        } else {
+          document.documentElement.setAttribute('data-text-size', 'md');
+        }
+      } catch (e) {
+        document.documentElement.setAttribute('data-text-size', 'md');
+      }
+    })();
+  </script>
 </head>
 <body class="text-slate-800 antialiased">
   <!-- Header — Liquid Glass navigation layer -->
@@ -483,10 +513,13 @@
             <span id="fund-balance-header" class="font-bold tabular-nums">HK$0.00</span>
           </button>
 
-          <div class="hidden sm:flex items-center gap-x-1.5 px-3 py-1.5 glass-pill text-slate-600">
-            <i class="fa-solid fa-mobile-screen text-xs"></i>
-            <span class="text-xs font-medium">手機友好</span>
-          </div>
+          <!-- 文字大小：標準 → 大 → 特大 -->
+          <button id="text-size-btn" type="button" onclick="cycleTextSize()"
+                  class="flex items-center gap-x-1.5 px-2.5 sm:px-3 h-9 glass-pill text-slate-600 font-medium pressable"
+                  title="文字大小（點擊切換）" aria-label="切換文字大小">
+            <i class="fa-solid fa-text-height text-xs"></i>
+            <span id="text-size-label" class="text-xs font-medium">標準</span>
+          </button>
           <button onclick="showBugReportModal()" 
                   class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-amber-600 glass-control pressable"
                   title="報告問題">
@@ -1266,10 +1299,18 @@
 
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
-    const APP_VERSION = '1.2.0';
+    const TEXT_SIZE_KEY = 'sansuanzi_text_size';
+    const APP_VERSION = '1.3.0';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
+
+    // 文字大小：標準 / 大 / 特大（改 root rem，整頁 Tailwind 字同間距跟住 scale）
+    const TEXT_SIZE_LEVELS = [
+      { id: 'md', label: '標準' },
+      { id: 'lg', label: '大' },
+      { id: 'xl', label: '特大' },
+    ];
 
     // ==================== Storage ====================
     function loadFromStorage() {
@@ -3279,6 +3320,35 @@ ${SHARE_DATA_END}`;
       showToast('範例數據已載入');
     }
 
+    // ==================== Text size ====================
+    function getTextSize() {
+      try {
+        const s = localStorage.getItem(TEXT_SIZE_KEY);
+        if (s === 'md' || s === 'lg' || s === 'xl') return s;
+      } catch (e) { /* ignore */ }
+      return 'md';
+    }
+
+    function applyTextSize(size, { silent } = {}) {
+      const level = TEXT_SIZE_LEVELS.find(l => l.id === size) || TEXT_SIZE_LEVELS[0];
+      document.documentElement.setAttribute('data-text-size', level.id);
+      try {
+        localStorage.setItem(TEXT_SIZE_KEY, level.id);
+      } catch (e) { /* ignore */ }
+      const label = document.getElementById('text-size-label');
+      if (label) label.textContent = level.label;
+      const btn = document.getElementById('text-size-btn');
+      if (btn) btn.title = `文字大小：${level.label}（點擊切換）`;
+      if (!silent) showToast(`文字大小：${level.label}`);
+    }
+
+    function cycleTextSize() {
+      const cur = getTextSize();
+      const idx = TEXT_SIZE_LEVELS.findIndex(l => l.id === cur);
+      const next = TEXT_SIZE_LEVELS[(idx + 1) % TEXT_SIZE_LEVELS.length];
+      applyTextSize(next.id);
+    }
+
     // ==================== Init ====================
     function initTailwind() {
       // Any runtime tailwind config if needed
@@ -3286,6 +3356,7 @@ ${SHARE_DATA_END}`;
 
     function init() {
       initTailwind();
+      applyTextSize(getTextSize(), { silent: true });
       loadFromStorage();
       updateFundDisplays();
       updateHeaderFundVisibility();
@@ -3546,6 +3617,8 @@ ${SHARE_DATA_END}`;
 3. 新增每筆開支：誰俾錢、幾多錢、項目、分俾邊啲人
 4. 有需要可以開「阿公」— 每個活動有自己嘅公數，墊支同結算轉入
 5. 系統自動計算每人結餘同最少還款方案
+
+文字太細？撳右上角「文字」掣，可喺 標準 / 大 / 特大 之間切換（會記住偏好）。
 
 想交俾朋友接手？撳「複製俾朋友」→ WhatsApp 貼上 send。朋友撳「接手記帳」貼返入去就得。
 
