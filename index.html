@@ -889,7 +889,7 @@
             <div id="fund-transfer-controls" class="mt-4 pt-4 border-t border-white/40 hidden">
               <div id="fund-transfer-pending-ui">
                 <div class="flex items-center justify-between mb-2">
-                  <div class="text-[10px] text-violet-700 font-medium">剔選想由阿公找數嘅還款</div>
+                  <div class="text-[10px] text-violet-700 font-medium">剔選還款後揀處理方式</div>
                   <div class="flex gap-1">
                     <button type="button" onclick="selectAllFundTransfers(true)"
                             class="text-[10px] px-2.5 h-6 glass-pill text-violet-700 font-medium pressable">全選</button>
@@ -897,18 +897,28 @@
                             class="text-[10px] px-2.5 h-6 glass-pill text-slate-600 font-medium pressable">取消</button>
                   </div>
                 </div>
-                <button id="transfer-selected-fund-btn" onclick="transferSelectedSettlementsToFund()" 
-                        class="w-full min-h-10 py-2 text-sm font-bold btn-liquid flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                  <i class="fa-solid fa-coins shrink-0 text-base leading-none"></i>
-                  <span class="text-center leading-tight">
-                    <span class="block">由阿公找數</span>
-                    <span id="transfer-selected-fund-amount" class="block text-[10px] font-semibold opacity-90 tabular-nums min-h-[14px]">&nbsp;</span>
-                  </span>
-                </button>
-                <div class="text-[10px] text-center text-violet-600 mt-1.5">剔選後撳「由阿公找數」— 阿公代付呢啲還款。撳錯可喺嗰行撳「還原」。</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button id="mark-settled-btn" type="button" onclick="markSelectedSettlementsDirect()"
+                          class="min-h-10 py-2 text-sm btn-liquid-ghost flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-check shrink-0 text-xs"></i>
+                    <span class="text-center leading-tight">
+                      <span class="block font-semibold">標記已結清</span>
+                      <span class="block text-[10px] font-medium opacity-80">自己轉帳</span>
+                    </span>
+                  </button>
+                  <button id="transfer-selected-fund-btn" type="button" onclick="transferSelectedSettlementsToFund()" 
+                          class="min-h-10 py-2 text-sm font-bold btn-liquid flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-coins shrink-0 text-base leading-none"></i>
+                    <span class="text-center leading-tight">
+                      <span class="block">由阿公找數</span>
+                      <span id="transfer-selected-fund-amount" class="block text-[10px] font-semibold opacity-90 tabular-nums min-h-[14px]">&nbsp;</span>
+                    </span>
+                  </button>
+                </div>
+                <div class="text-[10px] text-center text-violet-600 mt-1.5">「標記已結清」= 大家自己轉咗；「由阿公找數」= 阿公代付。撳錯可喺嗰行「還原」。</div>
               </div>
               <div id="fund-transfer-done-hint" class="hidden text-[10px] text-center text-violet-600">
-                以上已由阿公找數。撳錯？每行有「還原」可撤銷。
+                以上還款已處理。撳錯？每行有「還原」可撤銷。
               </div>
             </div>
           </div>
@@ -1298,7 +1308,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.3.2';
+    const APP_VERSION = '1.3.3';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
@@ -1318,6 +1328,7 @@
           activities = JSON.parse(raw);
           activities.forEach(act => {
             ensureFundTransfers(act);
+            ensureDirectSettlements(act);
             ensureActivityDates(act);
             ensureFundBalance(act);
           });
@@ -1841,6 +1852,7 @@
         participants: [],
         expenses: [],
         fundTransfers: [],
+        directSettlements: [],
         fundBalance: 0,
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -2255,6 +2267,7 @@
       
       act.expenses = [];
       act.fundTransfers = [];
+      act.directSettlements = [];
       act.updatedAt = Date.now();
       saveToStorage();
       cancelExpenseEdit();
@@ -2460,6 +2473,13 @@
       return act.fundTransfers;
     }
 
+    /** 自己轉帳已結清（唔郁阿公） */
+    function ensureDirectSettlements(act) {
+      if (!act) return [];
+      if (!Array.isArray(act.directSettlements)) act.directSettlements = [];
+      return act.directSettlements;
+    }
+
     function settlementMatchKey(s) {
       const amount = Math.round((Number(s.amount) || 0) * 100) / 100;
       return `${s.from}|${s.to}|${amount.toFixed(2)}`;
@@ -2470,9 +2490,18 @@
       return ensureFundTransfers(act).some(t => settlementMatchKey(t) === key);
     }
 
+    function isSettlementDirectSettled(act, settlement) {
+      const key = settlementMatchKey(settlement);
+      return ensureDirectSettlements(act).some(t => settlementMatchKey(t) === key);
+    }
+
+    function isSettlementHandled(act, settlement) {
+      return isSettlementTransferred(act, settlement) || isSettlementDirectSettled(act, settlement);
+    }
+
     function getPendingSettlements(act) {
       const settlements = computeSettlements(computeBalances(act));
-      return settlements.filter(s => !isSettlementTransferred(act, s));
+      return settlements.filter(s => !isSettlementHandled(act, s));
     }
 
     function computeSettlements(balances) {
@@ -2570,6 +2599,7 @@
       const empty = document.getElementById('settlements-empty');
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
+      const direct = ensureDirectSettlements(act);
       
       container.innerHTML = '';
       
@@ -2638,8 +2668,41 @@
         
         container.appendChild(row);
       });
+
+      direct.forEach((t, idx) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl';
+        row.style.cssText = 'background:rgba(16,185,129,0.10);border:0.5px solid rgba(16,185,129,0.28);backdrop-filter:blur(10px)';
+        
+        row.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0 flex-1">
+            <i class="fa-solid fa-circle-check text-emerald-500 text-sm shrink-0"></i>
+            <span class="font-semibold text-red-600 shrink-0">${escapeHtml(t.from)}</span>
+            <span class="text-slate-400 text-sm px-1">要俾</span>
+            <span class="font-semibold text-violet-700 shrink-0">${escapeHtml(t.to)}</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="font-bold tabular-nums text-base text-emerald-700">${formatMoney(t.amount)}</div>
+            <span class="text-[10px] font-medium text-emerald-700 whitespace-nowrap hidden sm:inline">已結清</span>
+            <button type="button"
+                    class="undo-direct-settle-btn shrink-0 text-[10px] sm:text-xs font-semibold px-2.5 h-7 glass-pill text-emerald-700 hover:text-emerald-900 pressable"
+                    title="還原呢筆已結清標記"
+                    data-index="${idx}">
+              <i class="fa-solid fa-rotate-left mr-0.5"></i>還原
+            </button>
+          </div>
+        `;
+
+        row.querySelector('.undo-direct-settle-btn').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          undoDirectSettlement(idx);
+        });
+        
+        container.appendChild(row);
+      });
       
-      if (pending.length === 0 && transferred.length === 0) {
+      if (pending.length === 0 && transferred.length === 0 && direct.length === 0) {
         empty.classList.remove('hidden');
       } else {
         empty.classList.add('hidden');
@@ -2653,21 +2716,30 @@
       const controls = document.getElementById('fund-transfer-controls');
       const pendingUi = document.getElementById('fund-transfer-pending-ui');
       const doneHint = document.getElementById('fund-transfer-done-hint');
-      const btn = document.getElementById('transfer-selected-fund-btn');
+      const fundBtn = document.getElementById('transfer-selected-fund-btn');
+      const settleBtn = document.getElementById('mark-settled-btn');
       const amountEl = document.getElementById('transfer-selected-fund-amount');
-      if (!act || !controls || !btn || !amountEl) return;
+      if (!act || !controls || !fundBtn || !amountEl) return;
 
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
+      const direct = ensureDirectSettlements(act);
       const selected = getSelectedPendingSettlements();
       const selectedTotal = selected.reduce((sum, s) => sum + s.amount, 0);
+      const noneSelected = selected.length === 0;
 
-      const hasAny = pending.length > 0 || transferred.length > 0;
+      const hasAny = pending.length > 0 || transferred.length > 0 || direct.length > 0;
       controls.classList.toggle('hidden', !hasAny);
       if (pendingUi) pendingUi.classList.toggle('hidden', pending.length === 0);
-      if (doneHint) doneHint.classList.toggle('hidden', !(pending.length === 0 && transferred.length > 0));
+      if (doneHint) {
+        doneHint.classList.toggle(
+          'hidden',
+          !(pending.length === 0 && (transferred.length > 0 || direct.length > 0))
+        );
+      }
 
-      btn.disabled = selected.length === 0;
+      fundBtn.disabled = noneSelected;
+      if (settleBtn) settleBtn.disabled = noneSelected;
       amountEl.textContent = selected.length > 0 ? formatMoney(selectedTotal) : '\u00a0';
     }
 
@@ -2753,6 +2825,7 @@
       if (!act) return;
       
       ensureFundTransfers(act);
+      ensureDirectSettlements(act);
       const balances = computeBalances(act);
       
       renderBalances(balances);
@@ -2818,6 +2891,7 @@
     function cloneActivityForExport(act) {
       ensureActivityDates(act);
       ensureFundTransfers(act);
+      ensureDirectSettlements(act);
       return {
         id: act.id,
         name: act.name,
@@ -2839,6 +2913,12 @@
           to: t.to || '',
           amount: Math.round((Number(t.amount) || 0) * 100) / 100,
           transferredAt: t.transferredAt || null
+        })),
+        directSettlements: (act.directSettlements || []).map(t => ({
+          from: t.from || '',
+          to: t.to || '',
+          amount: Math.round((Number(t.amount) || 0) * 100) / 100,
+          settledAt: t.settledAt || null
         })),
         createdAt: act.createdAt || Date.now(),
         updatedAt: act.updatedAt || Date.now()
@@ -2947,6 +3027,7 @@ ${SHARE_DATA_END}`;
         participants: Array.isArray(raw.participants) ? raw.participants.map(p => String(p).trim()).filter(Boolean) : [],
         expenses: [],
         fundTransfers: [],
+        directSettlements: [],
         fundBalance: Math.max(0, Math.round((Number(raw.fundBalance) || 0) * 100) / 100),
         createdAt: raw.createdAt || Date.now(),
         updatedAt: Date.now()
@@ -2977,8 +3058,18 @@ ${SHARE_DATA_END}`;
         })).filter(t => t.from && t.to && t.amount > 0);
       }
 
+      if (Array.isArray(raw.directSettlements)) {
+        act.directSettlements = raw.directSettlements.map(t => ({
+          from: String(t.from || '').trim(),
+          to: String(t.to || '').trim(),
+          amount: Math.max(0, Math.round((Number(t.amount) || 0) * 100) / 100),
+          settledAt: t.settledAt || Date.now()
+        })).filter(t => t.from && t.to && t.amount > 0);
+      }
+
       ensureActivityDates(act);
       ensureFundTransfers(act);
+      ensureDirectSettlements(act);
       return act;
     }
 
@@ -3186,6 +3277,7 @@ ${SHARE_DATA_END}`;
 
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
+      const direct = ensureDirectSettlements(act);
 
       if (pending.length > 0) {
         text += `\n${divider}\n`;
@@ -3203,7 +3295,15 @@ ${SHARE_DATA_END}`;
         });
       }
 
-      if (pending.length === 0 && transferred.length === 0) {
+      if (direct.length > 0) {
+        text += `\n${divider}\n`;
+        text += '【已結清（自己轉帳）】\n';
+        direct.forEach(t => {
+          text += `${t.from} 要俾 ${t.to} ${formatMoney(t.amount)} ✅\n`;
+        });
+      }
+
+      if (pending.length === 0 && transferred.length === 0 && direct.length === 0) {
         text += `\n${divider}\n`;
         text += '✅ 已經結清！大家兩清啦 🎉\n';
       }
@@ -3266,6 +3366,33 @@ ${SHARE_DATA_END}`;
       renderSettlement();
     }
 
+    /** 標記已結清（自己轉帳）— 畫面留狀態，唔郁阿公 */
+    function markSelectedSettlementsDirect() {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const selected = getSelectedPendingSettlements();
+      if (selected.length === 0) {
+        showToast('請至少揀一條還款', 'error');
+        return;
+      }
+
+      const settled = ensureDirectSettlements(act);
+      selected.forEach(s => {
+        settled.push({
+          from: s.from,
+          to: s.to,
+          amount: Math.round(s.amount * 100) / 100,
+          settledAt: Date.now()
+        });
+      });
+
+      act.updatedAt = Date.now();
+      saveToStorage();
+      showToast(`已標記 ${selected.length} 筆為已結清 · 可撳「還原」撤銷`);
+      renderSettlement();
+    }
+
     /** 還原一筆「已由阿公找數」— 從 fundTransfers 移除，阿公扣返金額 */
     function undoFundTransfer(index) {
       const act = getCurrentActivity();
@@ -3293,6 +3420,28 @@ ${SHARE_DATA_END}`;
       updateFundDisplays();
       renderSettlement();
       showToast(`已還原 · 阿公扣返 ${formatMoney(Math.min(amount, bal))}`);
+    }
+
+    /** 還原一筆「已結清（自己轉帳）」標記 */
+    function undoDirectSettlement(index) {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const settled = ensureDirectSettlements(act);
+      if (index < 0 || index >= settled.length) {
+        showToast('搵唔到呢筆記錄', 'error');
+        return;
+      }
+
+      const t = settled[index];
+      const amount = Math.round((Number(t.amount) || 0) * 100) / 100;
+      if (!confirm(`還原「${t.from} 要俾 ${t.to} ${formatMoney(amount)}」嘅已結清標記？\n呢筆會變返待還款。`)) return;
+
+      settled.splice(index, 1);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      renderSettlement();
+      showToast('已還原 · 變返待還款');
     }
 
     // ==================== Demo Data ====================
@@ -3340,6 +3489,9 @@ ${SHARE_DATA_END}`;
           createdAt: Date.now() - 30000
         }
       ];
+
+      act.fundTransfers = [];
+      act.directSettlements = [];
       
       act.updatedAt = Date.now();
       saveToStorage();
@@ -3467,6 +3619,7 @@ ${SHARE_DATA_END}`;
       const settlements = computeSettlements(balances);
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
+      const direct = ensureDirectSettlements(act);
       const personSummaries = computePersonSummaries(act);
 
       return {
@@ -3489,6 +3642,12 @@ ${SHARE_DATA_END}`;
           to: t.to,
           amount: Number(t.amount) || 0,
           transferredAt: t.transferredAt || null
+        })),
+        directSettlements: direct.map(t => ({
+          from: t.from,
+          to: t.to,
+          amount: Number(t.amount) || 0,
+          settledAt: t.settledAt || null
         })),
         balanceSum: Math.round(Object.values(balances).reduce((s, v) => s + v, 0) * 100) / 100
       };
@@ -3591,7 +3750,18 @@ ${SHARE_DATA_END}`;
           });
         }
 
-        if (focus.pendingSettlements.length === 0 && focus.fundTransfers.length === 0) {
+        if ((focus.directSettlements || []).length > 0) {
+          text += `\n【已結清（自己轉帳）】\n`;
+          focus.directSettlements.forEach(t => {
+            text += `  ${t.from} → ${t.to}：${formatMoney(t.amount)}\n`;
+          });
+        }
+
+        if (
+          focus.pendingSettlements.length === 0 &&
+          focus.fundTransfers.length === 0 &&
+          (focus.directSettlements || []).length === 0
+        ) {
           text += `\n✅ 此活動已結清\n`;
         }
       }
