@@ -602,6 +602,69 @@
 
     .custom-scroll { scrollbar-width: thin; scrollbar-color: rgba(99,99,102,0.28) transparent; }
 
+    /* 開支工作區：桌面右欄高度跟左表單，列表內 scroll */
+    .expense-workspace {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 1024px) {
+      .expense-workspace {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+      }
+
+      /* h-0 + min-height:100%：右欄唔再撐高 grid row，高度跟左欄 */
+      .expenses-list-col {
+        height: 0;
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .expenses-list-col > .hk-card {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: 100%;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #expenses-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #expenses-empty {
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+    }
+
+    /* 手機／平板：列表有合理上限，唔無限拉長 */
+    @media (max-width: 1023px) {
+      .expenses-list-col > .hk-card {
+        display: flex;
+        flex-direction: column;
+        max-height: min(60vh, 32rem);
+        overflow: hidden;
+      }
+
+      #expenses-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+
     /* Chip / tag */
     .chip {
       display: inline-flex;
@@ -916,11 +979,11 @@
         </div>
       </div>
 
-      <!-- Main content: Form + List -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:items-stretch">
+      <!-- Main content: Form + List（右欄 scroll，高度跟左表單） -->
+      <div class="expense-workspace">
         
         <!-- Add Expense Form -->
-        <div class="flex flex-col min-h-0">
+        <div class="expense-form-col flex flex-col min-h-0 min-w-0">
           <div class="hk-card p-5 flex-1 flex flex-col">
             <div class="section-title mb-3 flex items-center gap-2">
               <i class="fa-solid fa-receipt"></i>
@@ -1004,10 +1067,10 @@
           </div>
         </div>
         
-        <!-- Expenses List -->
-        <div class="flex flex-col min-h-0">
-          <div class="hk-card p-5 flex-1 flex flex-col min-h-0">
-            <div class="flex items-center justify-between mb-3">
+        <!-- Expenses List：桌面高度跟左欄，列表內 scroll -->
+        <div class="expenses-list-col min-w-0">
+          <div class="hk-card p-5">
+            <div class="flex items-center justify-between mb-3 shrink-0">
               <div class="section-title flex items-center gap-2">
                 <i class="fa-solid fa-clipboard-list"></i>
                 <span>開支記錄 <span id="expenses-count-badge" class="font-mono text-xs ml-1 text-slate-400"></span></span>
@@ -1019,7 +1082,7 @@
               </button>
             </div>
             
-            <div id="expenses-list" class="space-y-2.5 flex-1 min-h-0 overflow-auto pr-1 custom-scroll">
+            <div id="expenses-list" class="space-y-2.5 pr-1 custom-scroll">
               <!-- Populated by JS -->
             </div>
             
