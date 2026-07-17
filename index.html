@@ -760,20 +760,12 @@
         </div>
         
         <div class="flex items-center gap-x-1.5 sm:gap-x-2 text-sm">
-          <!-- 阿公餘額（活動內） -->
-          <button id="header-fund-btn" onclick="showFundManagerModal()" 
-                  class="hidden items-center gap-x-1.5 pl-3 pr-3.5 h-9 glass-pill text-violet-700 font-medium text-sm pressable">
-            <i class="fa-solid fa-coins text-violet-500"></i>
-            <span class="hidden sm:inline text-xs">阿公</span>
-            <span id="fund-balance-header" class="font-bold tabular-nums">HK$0.00</span>
-          </button>
-
-          <!-- 文字大小：標準 → 大 → 特大 -->
+          <!-- 文字大小：標準 → 大 → 特大（手機只 icon；label 桌面先顯示） -->
           <button id="text-size-btn" type="button" onclick="cycleTextSize()"
-                  class="flex items-center gap-x-1.5 px-2.5 sm:px-3 h-9 glass-pill text-slate-600 font-medium pressable"
+                  class="w-9 h-9 sm:w-auto sm:px-3 flex items-center justify-center gap-x-1.5 glass-pill text-slate-600 font-medium pressable"
                   title="文字大小（點擊切換）" aria-label="切換文字大小">
             <i class="fa-solid fa-text-height text-xs"></i>
-            <span id="text-size-label" class="text-xs font-medium">標準</span>
+            <span id="text-size-label" class="hidden sm:inline text-xs font-medium">標準</span>
           </button>
           <button onclick="showBugReportModal()" 
                   class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-amber-600 glass-control pressable"
@@ -781,7 +773,8 @@
             <i class="fa-solid fa-bug text-base"></i>
           </button>
           <button onclick="showHelp()" 
-                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 glass-control pressable">
+                  class="w-9 h-9 flex items-center justify-center text-slate-500 hover:text-slate-700 glass-control pressable"
+                  title="說明" aria-label="說明">
             <i class="fa-solid fa-question-circle text-base"></i>
           </button>
         </div>
@@ -1620,20 +1613,10 @@
 
     function updateFundDisplays() {
       const formatted = formatMoney(getFundBalance());
-      const headerVal = document.getElementById('fund-balance-header');
-      if (headerVal) headerVal.textContent = formatted;
       const detailVal = document.getElementById('fund-balance-detail');
       if (detailVal) detailVal.textContent = formatted;
       const modalVal = document.getElementById('fund-modal-balance');
       if (modalVal) modalVal.textContent = formatted;
-    }
-
-    function updateHeaderFundVisibility() {
-      const btn = document.getElementById('header-fund-btn');
-      if (!btn) return;
-      const inDetail = !document.getElementById('view-detail')?.classList.contains('hidden');
-      btn.classList.toggle('hidden', !inDetail);
-      btn.classList.toggle('flex', inDetail);
     }
 
     let openModalCount = 0;
@@ -1936,14 +1919,12 @@
     function showActivitiesView() {
       document.getElementById('view-activities').classList.remove('hidden');
       document.getElementById('view-detail').classList.add('hidden');
-      updateHeaderFundVisibility();
       renderActivitiesList();
     }
 
     function showDetailView() {
       document.getElementById('view-activities').classList.add('hidden');
       document.getElementById('view-detail').classList.remove('hidden');
-      updateHeaderFundVisibility();
       updateLocalDataNoticeVisibility();
       renderDetail();
       updateFundDisplays();
@@ -3797,7 +3778,6 @@ ${SHARE_DATA_END}`;
       applyTextSize(getTextSize(), { silent: true });
       loadFromStorage();
       updateFundDisplays();
-      updateHeaderFundVisibility();
       
       // Show activities list by default
       showActivitiesView();
