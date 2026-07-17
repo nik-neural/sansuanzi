@@ -224,9 +224,63 @@
     }
 
     .btn-liquid-settle:disabled,
+    .btn-liquid-wa:disabled,
+    .btn-liquid-warn:disabled,
+    .btn-liquid-danger:disabled,
     .btn-liquid:disabled {
       filter: none;
       opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* WhatsApp 主操作 — 同 btn-liquid 權重，綠實心 */
+    .btn-liquid-wa {
+      background: linear-gradient(180deg, #34d399 0%, #128C7E 100%);
+      color: #fff;
+      border: 0.5px solid rgba(255, 255, 255, 0.35);
+      border-radius: var(--lg-radius-pill);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 6px 20px rgba(18, 140, 126, 0.35);
+      font-weight: 700;
+      transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-liquid-wa:hover {
+      filter: brightness(1.05);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 8px 24px rgba(18, 140, 126, 0.42);
+    }
+
+    .btn-liquid-wa:active {
+      transform: scale(0.97);
+      filter: brightness(0.97);
+    }
+
+    /* 警告 / 覆蓋類主操作（更新現有、報告問題） */
+    .btn-liquid-warn {
+      background: linear-gradient(180deg, #fbbf24 0%, #d97706 100%);
+      color: #fff;
+      border: 0.5px solid rgba(255, 255, 255, 0.35);
+      border-radius: var(--lg-radius-pill);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 6px 20px rgba(217, 119, 6, 0.32);
+      font-weight: 700;
+      transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-liquid-warn:hover {
+      filter: brightness(1.05);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.4) inset,
+        0 8px 24px rgba(217, 119, 6, 0.4);
+    }
+
+    .btn-liquid-warn:active {
+      transform: scale(0.97);
+      filter: brightness(0.97);
     }
 
     .btn-liquid-danger {
@@ -238,6 +292,73 @@
         0 1px 0 rgba(255, 255, 255, 0.3) inset,
         0 6px 18px rgba(225, 29, 72, 0.3);
       font-weight: 600;
+      transition: transform 0.12s ease, filter 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn-liquid-danger:hover {
+      filter: brightness(1.05);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 8px 22px rgba(225, 29, 72, 0.38);
+    }
+
+    .btn-liquid-danger:active {
+      transform: scale(0.97);
+      filter: brightness(0.97);
+    }
+
+    /* 次要 WhatsApp pill（接手記帳 / 俾朋友接手） */
+    .glass-pill-wa {
+      background: rgba(37, 211, 102, 0.12);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      backdrop-filter: blur(20px) saturate(150%);
+      border: 0.5px solid rgba(37, 211, 102, 0.28);
+      border-radius: var(--lg-radius-pill);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+      color: #128C7E;
+      font-weight: 600;
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+
+    .glass-pill-wa:hover {
+      background: rgba(37, 211, 102, 0.18);
+    }
+
+    .glass-pill-wa:active {
+      transform: scale(0.97);
+    }
+
+    /* 琥珀色 notice glass */
+    .notice-amber {
+      background: rgba(251, 191, 36, 0.12);
+      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+      border: 0.5px solid rgba(251, 191, 36, 0.28);
+      color: #78350f;
+    }
+
+    /* WhatsApp 成功 icon blob */
+    .icon-blob-wa {
+      background: rgba(37, 211, 102, 0.15);
+      -webkit-backdrop-filter: blur(12px) saturate(150%);
+      backdrop-filter: blur(12px) saturate(150%);
+      border: 0.5px solid rgba(37, 211, 102, 0.28);
+      border-radius: 22%;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset;
+      color: #25D366;
+    }
+
+    /* WhatsApp 步驟圓點 */
+    .wa-step {
+      background: #25D366;
+      color: #fff;
+      border-radius: 999px;
+      font-weight: 700;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset;
     }
 
     .expense-card {
@@ -440,7 +561,10 @@
     /* WhatsApp accent glass */
     .wa-glass {
       background: linear-gradient(135deg, rgba(37, 211, 102, 0.12), rgba(255, 255, 255, 0.5));
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      backdrop-filter: blur(18px) saturate(150%);
       border: 0.5px solid rgba(37, 211, 102, 0.22);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset;
     }
 
     /* Soft notice */
@@ -528,7 +652,8 @@
 
     @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
       .glass-nav, .hk-card, .glass-card, .modal-sheet, .glass-sheet,
-      .glass-pill, .glass-control, .expense-card, .fund-glass {
+      .glass-pill, .glass-pill-wa, .glass-control, .expense-card, .fund-glass,
+      .wa-glass, .notice-glass, .notice-amber, .icon-blob-wa {
         background: rgba(255, 255, 255, 0.92);
       }
     }
@@ -611,11 +736,11 @@
           <p class="text-slate-500 text-sm mt-0.5">選擇一個活動開始記帳</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <!-- 次要：接手記帳（outline，長說明收喺 title / modal） -->
+          <!-- 次要：接手記帳（glass pill；長說明收喺 title / modal） -->
           <button type="button" onclick="showImportActivityModal()"
                   title="朋友 send 咗記帳資料？長撳 WhatsApp 訊息複製，再喺度貼上"
                   aria-label="接手記帳"
-                  class="flex items-center gap-x-1.5 px-3 sm:px-3.5 h-9 sm:h-11 text-xs sm:text-sm font-semibold rounded-full pressable text-[#128C7E] border border-[#25D366]/25 bg-[rgba(37,211,102,0.10)] hover:bg-[rgba(37,211,102,0.16)] transition-colors">
+                  class="flex items-center gap-x-1.5 px-3 sm:px-3.5 h-9 sm:h-11 text-xs sm:text-sm glass-pill-wa pressable">
             <i class="fa-brands fa-whatsapp text-sm sm:text-base"></i>
             <span>接手記帳</span>
           </button>
@@ -671,7 +796,7 @@
         
         <div class="flex items-center gap-x-2">
           <button onclick="exportCurrentActivity()" 
-                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 glass-pill text-[#128C7E] font-semibold pressable border border-[#25D366]/20">
+                  class="text-sm flex items-center gap-x-1.5 px-3.5 h-9 glass-pill-wa pressable">
             <i class="fa-brands fa-whatsapp"></i>
             <span>俾朋友接手</span>
           </button>
@@ -926,7 +1051,7 @@
             <div id="balances-empty" class="hidden text-sm text-slate-400 py-2">暫未有數據</div>
 
             <button onclick="generateWhatsAppShare()" 
-                    class="w-full mt-4 flex items-center justify-center gap-2.5 h-12 text-sm font-bold text-white rounded-full transition-all pressable" style="background:linear-gradient(180deg,#34d399,#128C7E);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(18,140,126,.35);border:.5px solid rgba(255,255,255,.25)">
+                    class="w-full mt-4 flex items-center justify-center gap-2.5 h-12 text-sm btn-liquid-wa pressable">
               <i class="fa-brands fa-whatsapp text-xl"></i>
               <span>分享結算結果</span>
             </button>
@@ -1015,7 +1140,7 @@
          class="modal-sheet glass-sheet w-full sm:w-[440px] rounded-t-[28px] sm:rounded-[28px] p-6 sm:p-7">
       <div class="flex justify-between items-center mb-5">
         <div class="font-bold text-xl">建立新活動</div>
-        <button onclick="hideCreateModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+        <button onclick="hideCreateModal()" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 glass-control pressable" aria-label="關閉"><i class="fa-solid fa-times text-xl"></i></button>
       </div>
       
       <div>
@@ -1056,7 +1181,7 @@
          class="modal-sheet glass-sheet w-full sm:w-[400px] rounded-t-[28px] sm:rounded-[28px] p-6 sm:p-7">
       <div class="flex justify-between items-center mb-5 shrink-0">
         <div class="font-bold text-xl">活動日期</div>
-        <button onclick="hideEditDatesModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+        <button onclick="hideEditDatesModal()" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 glass-control pressable" aria-label="關閉"><i class="fa-solid fa-times text-xl"></i></button>
       </div>
 
       <div class="date-fields-row grid grid-cols-2 gap-2 sm:gap-3">
@@ -1098,7 +1223,7 @@
           </div>
           <div class="text-xs text-violet-600">呢個活動嘅共同錢包（公數）</div>
         </div>
-        <button onclick="hideFundManagerModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+        <button onclick="hideFundManagerModal()" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 glass-control pressable" aria-label="關閉"><i class="fa-solid fa-times text-xl"></i></button>
       </div>
 
       <!-- Big Balance -->
@@ -1210,16 +1335,16 @@
             </div>
             <div class="text-xs text-slate-500 mt-1">朋友 send 咗記帳資料？長撳 WhatsApp 訊息全段複製，再喺度貼上</div>
           </div>
-          <button onclick="hideImportActivityModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+          <button onclick="hideImportActivityModal()" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 glass-control pressable" aria-label="關閉"><i class="fa-solid fa-times text-xl"></i></button>
         </div>
       </div>
 
       <div class="flex-1 min-h-0 overflow-y-auto px-6 sm:px-7 py-4 space-y-4">
         <div class="px-3 py-3 rounded-[18px] wa-glass text-xs text-slate-700 leading-relaxed space-y-2">
           <div class="font-semibold text-[#128C7E]">點樣接手？</div>
-          <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-[#25D366] text-white text-[10px] font-bold flex items-center justify-center">1</span><span>打開朋友 send 嘅 WhatsApp 訊息</span></div>
-          <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-[#25D366] text-white text-[10px] font-bold flex items-center justify-center">2</span><span>長撳條訊息 → <strong>複製</strong>（成段複製就得）</span></div>
-          <div class="flex gap-2"><span class="shrink-0 w-5 h-5 rounded-full bg-[#25D366] text-white text-[10px] font-bold flex items-center justify-center">3</span><span>喺下面貼上 → 撳「開始接手」</span></div>
+          <div class="flex gap-2"><span class="wa-step w-5 h-5 text-[10px]">1</span><span>打開朋友 send 嘅 WhatsApp 訊息</span></div>
+          <div class="flex gap-2"><span class="wa-step w-5 h-5 text-[10px]">2</span><span>長撳條訊息 → <strong>複製</strong>（成段複製就得）</span></div>
+          <div class="flex gap-2"><span class="wa-step w-5 h-5 text-[10px]">3</span><span>喺下面貼上 → 撳「開始接手」</span></div>
         </div>
 
         <div>
@@ -1235,7 +1360,7 @@
           <div id="import-activity-preview"></div>
         </div>
 
-        <div id="import-activity-conflict-wrap" class="hidden px-3 py-2.5 rounded-[18px] text-xs text-amber-900 leading-relaxed" style="background:rgba(251,191,36,.12);border:.5px solid rgba(251,191,36,.28);backdrop-filter:blur(12px)">
+        <div id="import-activity-conflict-wrap" class="hidden px-3 py-2.5 rounded-[18px] notice-amber text-xs leading-relaxed">
           <i class="fa-solid fa-triangle-exclamation mr-1"></i>
           <span id="import-activity-conflict-text"></span>
         </div>
@@ -1250,11 +1375,11 @@
         <button onclick="hideImportActivityModal()" 
                 class="sm:flex-1 h-12 btn-liquid-ghost text-sm">取消</button>
         <button id="import-activity-new-btn" onclick="confirmImportActivity('new')" disabled
-                class="sm:flex-1 h-12 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full font-bold text-sm pressable" style="background:linear-gradient(180deg,#34d399,#128C7E);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(18,140,126,.3)">
+                class="sm:flex-1 h-12 btn-liquid-wa text-sm disabled:opacity-40 disabled:cursor-not-allowed">
           開始接手
         </button>
         <button id="import-activity-replace-btn" onclick="confirmImportActivity('replace')" disabled
-                class="hidden sm:flex-1 h-12 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full font-bold text-sm pressable" style="background:linear-gradient(180deg,#fbbf24,#d97706);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(217,119,6,.3)">
+                class="hidden sm:flex-1 h-12 btn-liquid-warn text-sm disabled:opacity-40 disabled:cursor-not-allowed">
           更新現有活動
         </button>
       </div>
@@ -1268,8 +1393,8 @@
          class="glass-sheet w-full sm:w-[460px] rounded-t-[28px] sm:rounded-[28px] p-6 sm:p-7">
       
       <div class="text-center mb-5">
-        <div class="mx-auto w-14 h-14 rounded-[22%] flex items-center justify-center mb-3 border border-[#25D366]/25" style="background:rgba(37,211,102,.15);backdrop-filter:blur(12px)">
-          <i class="fa-solid fa-check text-[#25D366] text-2xl"></i>
+        <div class="mx-auto w-14 h-14 icon-blob-wa flex items-center justify-center mb-3">
+          <i class="fa-solid fa-check text-2xl"></i>
         </div>
         <div class="font-bold text-xl text-slate-900">已複製記帳資料！</div>
         <div class="text-sm text-slate-500 mt-1">而家去 WhatsApp 貼上 send 畀朋友</div>
@@ -1277,15 +1402,15 @@
 
       <div class="space-y-3 mb-5">
         <div class="flex items-start gap-3 p-3 rounded-[18px] wa-glass">
-          <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">1</span>
+          <span class="wa-step w-7 h-7 text-xs">1</span>
           <div class="text-sm text-slate-700 pt-0.5">打開 <strong>WhatsApp</strong>，搵個 group 或者朋友</div>
         </div>
         <div class="flex items-start gap-3 p-3 rounded-[18px] wa-glass">
-          <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">2</span>
+          <span class="wa-step w-7 h-7 text-xs">2</span>
           <div class="text-sm text-slate-700 pt-0.5">長撳輸入框 → <strong>貼上</strong> → Send</div>
         </div>
         <div class="flex items-start gap-3 p-3 rounded-[18px] wa-glass">
-          <span class="shrink-0 w-7 h-7 rounded-full bg-[#25D366] text-white text-xs font-bold flex items-center justify-center">3</span>
+          <span class="wa-step w-7 h-7 text-xs">3</span>
           <div class="text-sm text-slate-700 pt-0.5">朋友開神算子 → 撳「<strong>接手記帳</strong>」→ 長撳你條訊息複製 → 貼上</div>
         </div>
       </div>
@@ -1296,7 +1421,7 @@
       </div>
 
       <button onclick="hideExportShareModal()" 
-              class="w-full h-12 text-white rounded-full font-bold text-sm pressable" style="background:linear-gradient(180deg,#34d399,#128C7E);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(18,140,126,.3)">
+              class="w-full h-12 btn-liquid-wa text-sm">
         明白晒！
       </button>
     </div>
@@ -1317,7 +1442,7 @@
             </div>
             <div class="text-xs text-slate-500 mt-1">描述你覺得邊度計錯，系統會自動附上數據方便排查</div>
           </div>
-          <button onclick="hideBugReportModal()" class="w-9 h-9 flex text-slate-400 hover:text-slate-600"><i class="fa-solid fa-times text-xl m-auto"></i></button>
+          <button onclick="hideBugReportModal()" class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 glass-control pressable" aria-label="關閉"><i class="fa-solid fa-times text-xl"></i></button>
         </div>
       </div>
 
@@ -1334,7 +1459,7 @@
                  class="field-liquid w-full h-11 text-sm outline-none">
         </div>
 
-        <div class="px-3 py-2.5 rounded-[18px] text-xs text-amber-900 leading-relaxed" style="background:rgba(251,191,36,.12);border:.5px solid rgba(251,191,36,.28);backdrop-filter:blur(12px)">
+        <div class="px-3 py-2.5 rounded-[18px] notice-amber text-xs leading-relaxed">
           <i class="fa-solid fa-shield-halved mr-1"></i>
           報告會包含活動、開支、結算結果同裝置資訊，<span class="font-semibold">唔會</span>自動傳送出去 — 只會複製到剪貼簿，你再 paste 畀開發者 (Nik)。
         </div>
@@ -1349,7 +1474,7 @@
         <button onclick="hideBugReportModal()" 
                 class="flex-1 h-12 btn-liquid-ghost text-sm">取消</button>
         <button onclick="generateAndCopyBugReport()" 
-                class="flex-1 h-12 text-white rounded-full font-bold text-sm flex items-center justify-center gap-2 pressable" style="background:linear-gradient(180deg,#fbbf24,#d97706);box-shadow:0 1px 0 rgba(255,255,255,.3) inset,0 6px 18px rgba(217,119,6,.3)">
+                class="flex-1 h-12 btn-liquid-warn text-sm flex items-center justify-center gap-2">
           <i class="fa-solid fa-copy"></i>
           <span>生成並複製報告</span>
         </button>
@@ -1836,7 +1961,7 @@
                 </div>` : ''}
               </div>
               <button onclick="event.stopImmediatePropagation(); deleteActivity('${activity.id}');" 
-                      class="w-8 h-8 -mr-1 -mt-1 flex items-center justify-center text-slate-400 hover:text-red-500 glass-control shrink-0">
+                      class="w-8 h-8 -mr-1 -mt-1 flex items-center justify-center text-slate-400 hover:text-red-500 glass-control pressable shrink-0" aria-label="刪除活動">
                 <i class="fa-solid fa-trash text-xs"></i>
               </button>
             </div>
@@ -2400,7 +2525,7 @@
             <div class="font-semibold text-base leading-tight">${escapeHtml(exp.description)}</div>
             
             <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-              <div class="inline-flex items-center px-2.5 py-0.5 glass-pill text-amber-800 font-medium bg-amber-100/50">
+              <div class="inline-flex items-center px-2.5 py-0.5 glass-pill text-amber-800 font-medium">
                 <i class="fa-solid fa-user mr-1.5 text-amber-500"></i>
                 <span>${escapeHtml(exp.payer)} 俾</span>
               </div>
@@ -2425,11 +2550,11 @@
           
           <div class="flex flex-col gap-1 items-end pt-0.5 shrink-0">
             <button onclick="editExpense('${exp.id}')" 
-                    class="w-8 h-8 flex items-center justify-center text-violet-500 glass-control">
+                    class="w-8 h-8 flex items-center justify-center text-violet-500 glass-control pressable" aria-label="編輯">
               <i class="fa-solid fa-pen text-xs"></i>
             </button>
             <button onclick="deleteExpense('${exp.id}')" 
-                    class="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-500 glass-control">
+                    class="w-8 h-8 flex items-center justify-center text-red-400 hover:text-red-500 glass-control pressable" aria-label="刪除">
               <i class="fa-solid fa-trash text-xs"></i>
             </button>
           </div>
