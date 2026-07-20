@@ -3490,6 +3490,32 @@ ${SHARE_DATA_END}`;
       text += `${divider}\n`;
       text += `💰 總開支：${formatMoney(total)}\n`;
       text += `🧮 阿公餘額：${formatMoney(getFundBalance())}\n`;
+
+      // 開支記錄（friend 一眼睇到食咗/用咗咩）
+      text += `${divider}\n`;
+      if (act.expenses.length === 0) {
+        text += '【開支記錄】仲未有開支\n';
+      } else {
+        text += `【開支記錄】共 ${act.expenses.length} 筆\n`;
+        act.expenses.forEach((exp, i) => {
+          const { fundPaid, amountToSplit, people } = getExpenseSplitDetails(exp);
+          const parts = [];
+          if (exp.payer) parts.push(`${exp.payer} 俾`);
+          if (fundPaid > 0.005) parts.push(`阿公墊 ${formatMoney(fundPaid)}`);
+          if (amountToSplit <= 0.005) {
+            parts.push('阿公全額');
+          } else if (people.length > 0) {
+            const allParticipants = act.participants || [];
+            const isEveryone = allParticipants.length > 0
+              && people.length === allParticipants.length
+              && allParticipants.every(p => people.includes(p));
+            parts.push(isEveryone ? `分 ${people.length} 人` : `分：${people.join('、')}`);
+          }
+          const meta = parts.length ? `（${parts.join(' · ')}）` : '';
+          text += `${i + 1}. ${exp.description || '開支'} — ${formatMoney(exp.amount)}${meta}\n`;
+        });
+      }
+
       text += `${divider}\n`;
       text += '【每人明細】\n';
       computePersonSummaries(act).forEach(({ name, paid, owed, balance }) => {
@@ -3547,7 +3573,6 @@ ${SHARE_DATA_END}`;
       }
 
       text += `\n${divider}\n`;
-      text += `🔗 想交俾下一位接手？撳「俾朋友接手」→ WhatsApp 貼上 send 就得。接手人撳「接手記帳」貼返入去。\n`;
       text += `📲 未用過神算子？開呢個連結：\n${SHARE_APP_URL}`;
 
       return text;
