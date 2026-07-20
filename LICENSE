@@ -1,0 +1,91 @@
+Copyright (c) 2026 Nik (GitHub: nik-neural)
+Project: 神算子 (Sansuanzi)
+
+================================================================================
+SOURCE-AVAILABLE · NON-COMMERCIAL (custom)
+================================================================================
+
+This software and its associated branding (including the name「神算子」,
+"Sansuanzi", icons, and UI copy) are protected by copyright and related rights.
+
+## You MAY
+
+1. Use the official web app for personal, private, non-commercial group
+   expense splitting.
+2. View the source code for learning, security review, or private experiments.
+3. Fork the repository for personal / non-commercial use, provided you keep
+   this LICENSE and all copyright / attribution notices intact.
+4. Submit issues, bug reports, or pull requests to the official repository.
+
+## You may NOT (without prior written permission from the copyright holder)
+
+1. Sell, license, or commercially redistribute this software, or a derivative
+   that is substantially based on it.
+2. Publish it (or a rebranded / lightly modified version) on any app store
+   (Apple App Store, Google Play, etc.), marketplace, or paid channel as your
+   own product.
+3. Wrap it as an ad-supported, freemium, or paid “clone” web/app product.
+4. Remove, obscure, or alter copyright, attribution, license, or official-site
+   notices.
+5. Use the names「神算子」, Sansuanzi, nik-neural branding, or confusingly
+   similar marks in a way that misleads users about the official source.
+6. Claim that this app is an official product of xAI, xAI LLC, Grok, or
+   Grok Build — or use those names to imply endorsement.
+
+## Official channels (only these are authoritative)
+
+- App:  https://nik-neural.github.io/sansuanzi/
+- Source: https://github.com/nik-neural/sansuanzi
+
+Any other domain, store listing, or binary claiming to be「神算子」without
+appearing above should be treated as unofficial.
+
+## About Grok Build / xAI
+
+This project was built with assistance from Grok Build / Grok (xAI).
+It is an independent personal project of the copyright holder.
+It is NOT affiliated with, endorsed by, or an official product of xAI or
+xAI LLC. “Grok”, “Grok Build”, and “xAI” are marks of their respective owners.
+
+## No warranty / 免責
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+Expense calculations are a convenience aid only — not financial, accounting,
+or legal advice. Users should verify balances before transferring money.
+The authors and contributors are not liable for any loss arising from use
+or inability to use this software (including calculation mistakes, data loss
+in localStorage, or third-party clones).
+
+Data is stored only in the user’s browser (localStorage) and is not uploaded
+to the project author’s servers by this app itself.
+
+## Permission requests
+
+For commercial use, rebranding, or redistribution rights, contact the
+copyright holder via the official GitHub repository.
+
+================================================================================
+中文摘要（與上文英文條款一併適用；衝突時以較嚴格限制為準）
+================================================================================
+
+版權所有 © 2026 Nik（GitHub: nik-neural）。專案名稱：神算子（Sansuanzi）。
+
+允許：個人非商業使用官方 App；閱讀原始碼學習；私人 fork（須保留本 LICENSE
+同署名）；向官方 repo 提交 issue / PR。
+
+禁止（未得版權人書面許可）：商業轉售／再分發；上架 App Store / Google Play
+等商店當自己產品；改頭換面做收費或廣告 clone；移除版權或官方連結；用
+「神算子」等名稱誤導來源；宣稱本 App 係 xAI / Grok / Grok Build 官方產品。
+
+官方渠道僅限：
+https://nik-neural.github.io/sansuanzi/
+https://github.com/nik-neural/sansuanzi
+
+本專案借助 Grok Build / Grok（xAI）協助開發，屬個人獨立作品，與 xAI 無關、
+亦非官方產品。
+
+本軟件按「現況」提供，不作任何保證。計算結果僅供參考，轉帳前請自行核對。
+資料只存於用戶瀏覽器 localStorage。
