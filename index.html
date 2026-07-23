@@ -1636,7 +1636,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.3.9';
+    const APP_VERSION = '1.4.0';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/sansuanzi';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
@@ -2129,7 +2129,7 @@
     function escapeHtml(str) {
       if (!str) return '';
       return String(str).replace(/[&<>"']/g, s => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        '&': '&', '<': '<', '>': '>', '"': '"', "'": '&#39;'
       }[s]));
     }
 
@@ -2820,6 +2820,22 @@
       return balances;
     }
 
+    /** 有效結餘 = 開支結餘 ± 已由阿公找數 ± 已標記結清 */
+    function computeEffectiveBalances(act) {
+      const balances = { ...computeBalances(act) };
+      const handled = [
+        ...ensureFundTransfers(act),
+        ...ensureDirectSettlements(act)
+      ];
+      handled.forEach(t => {
+        const amt = Math.round((Number(t.amount) || 0) * 100) / 100;
+        if (amt <= 0.005) return;
+        balances[t.from] = Math.round(((balances[t.from] || 0) + amt) * 100) / 100;
+        balances[t.to]   = Math.round(((balances[t.to]   || 0) - amt) * 100) / 100;
+      });
+      return balances;
+    }
+
     function computePersonSummaries(act) {
       const people = new Set(act.participants);
       act.expenses.forEach(e => {
@@ -2885,8 +2901,7 @@
     }
 
     function getPendingSettlements(act) {
-      const settlements = computeSettlements(computeBalances(act));
-      return settlements.filter(s => !isSettlementHandled(act, s));
+      return computeSettlements(computeEffectiveBalances(act));
     }
 
     function computeSettlements(balances) {
@@ -3007,8 +3022,14 @@
           <div class="flex items-center gap-2 shrink-0">
             <div class="font-bold tabular-nums text-lg text-slate-800">${formatMoney(s.amount)}</div>
             <button type="button"
-                    class="copy-settlement-btn w-7 h-7 flex items-center justify-center text-slate-400 hover:text-violet-600 glass-control">
+                    class="copy-settlement-btn w-7 h-7 flex items-center justify-center text-slate-400 hover:text-violet-600 glass-control"
+                    title="複製這筆還款">
               <i class="fa-solid fa-copy text-xs"></i>
+            </button>
+            <button type="button"
+                    class="partial-settle-btn w-7 h-7 flex items-center justify-center text-emerald-600 hover:text-emerald-700 glass-control"
+                    title="找部分金額">
+              <i class="fa-solid fa-hand-holding-dollar text-xs"></i>
             </button>
           </div>
         `;
@@ -3017,6 +3038,12 @@
           e.preventDefault();
           e.stopPropagation();
           copySettlementLine(s.from, s.to, s.amount);
+        });
+
+        row.querySelector('.partial-settle-btn').addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          partialSettle(s.from, s.to, s.amount);
         });
         
         container.appendChild(row);
@@ -3211,7 +3238,7 @@
       
       ensureFundTransfers(act);
       ensureDirectSettlements(act);
-      const balances = computeBalances(act);
+      const balances = computeEffectiveBalances(act);
       
       renderBalances(balances);
       renderSettlements(act);
@@ -3801,6 +3828,41 @@ ${SHARE_DATA_END}`;
       act.updatedAt = Date.now();
       saveToStorage();
       showToast(`已標記 ${selected.length} 筆為已結清 · 可撳「還原」撤銷`);
+      renderSettlement();
+    }
+
+    /** 找部分金額（自己轉帳） */
+    function partialSettle(from, to, maxAmount) {
+      const input = prompt(
+        `「${from} 要俾 ${to}」\n輸入今次找數金額（最多 ${formatMoney(maxAmount)}）：`,
+        maxAmount.toFixed(2)
+      );
+      if (input === null) return;
+
+      let amt = parseFloat(input);
+      if (isNaN(amt) || amt <= 0) {
+        showToast('請輸入有效金額', 'error');
+        return;
+      }
+      amt = Math.round(Math.min(amt, maxAmount) * 100) / 100;
+      if (amt < 0.01) {
+        showToast('金額太細', 'error');
+        return;
+      }
+
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const settled = ensureDirectSettlements(act);
+      settled.push({
+        from,
+        to,
+        amount: amt,
+        settledAt: Date.now()
+      });
+      act.updatedAt = Date.now();
+      saveToStorage();
+      showToast(`已記錄 ${from} 找 ${to} ${formatMoney(amt)}`);
       renderSettlement();
     }
 
