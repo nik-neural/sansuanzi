@@ -1636,7 +1636,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.4.0';
+    const APP_VERSION = '1.4.1';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/sansuanzi';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
@@ -3043,7 +3043,7 @@
         row.querySelector('.partial-settle-btn').addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
-          partialSettle(s.from, s.to, s.amount);
+          partialSettle(s.from, s.to);
         });
         
         container.appendChild(row);
@@ -3831,8 +3831,56 @@ ${SHARE_DATA_END}`;
       renderSettlement();
     }
 
-    /** 找部分金額（自己轉帳） */
-    function partialSettle(from, to, maxAmount) {
+    /** 找部分金額（自己轉帳）— 按付款人總欠款計算，可選收款人 */
+    function partialSettle(from, suggestedTo) {
+      const act = getCurrentActivity();
+      if (!act) return;
+
+      const balances = computeEffectiveBalances(act);
+      const debtorRemaining = Math.round(Math.max(0, -(balances[from] || 0)) * 100) / 100;
+      if (debtorRemaining < 0.01) {
+        showToast(`${from} 已經唔使再找數`, 'error');
+        return;
+      }
+
+      // 列出所有有正結餘嘅人（應收方）
+      const creditors = Object.entries(balances)
+        .filter(([, v]) => v > 0.005)
+        .map(([name, amount]) => ({ name, amount: Math.round(amount * 100) / 100 }))
+        .sort((a, b) => b.amount - a.amount);
+
+      if (creditors.length === 0) {
+        showToast('而家冇人應收', 'error');
+        return;
+      }
+
+      let to = suggestedTo;
+      const suggestedStillValid = creditors.some(c => c.name === suggestedTo);
+
+      if (creditors.length === 1) {
+        to = creditors[0].name;
+      } else {
+        // 多個收款人：用 prompt 列出
+        const list = creditors.map((c, i) => `${i + 1}. ${c.name}（應收 ${formatMoney(c.amount)}）`).join('\n');
+        const defaultIdx = suggestedStillValid
+          ? (creditors.findIndex(c => c.name === suggestedTo) + 1)
+          : 1;
+        const choice = prompt(
+          `「${from}」仲欠 ${formatMoney(debtorRemaining)}\n\n揀今次找畀邊個：\n${list}\n\n輸入數字（1-${creditors.length}）：`,
+          String(defaultIdx)
+        );
+        if (choice === null) return;
+        const idx = parseInt(choice, 10) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= creditors.length) {
+          showToast('請輸入有效數字', 'error');
+          return;
+        }
+        to = creditors[idx].name;
+      }
+
+      const creditorRemaining = Math.round((balances[to] || 0) * 100) / 100;
+      const maxAmount = Math.min(debtorRemaining, creditorRemaining);
+
       const input = prompt(
         `「${from} 要俾 ${to}」\n輸入今次找數金額（最多 ${formatMoney(maxAmount)}）：`,
         maxAmount.toFixed(2)
@@ -3849,9 +3897,6 @@ ${SHARE_DATA_END}`;
         showToast('金額太細', 'error');
         return;
       }
-
-      const act = getCurrentActivity();
-      if (!act) return;
 
       const settled = ensureDirectSettlements(act);
       settled.push({
