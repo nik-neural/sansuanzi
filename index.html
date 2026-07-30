@@ -1626,9 +1626,9 @@
     </div>
   </div>
 
-  <!-- 找部分金額 Modal -->
+  <!-- 找部分金額 Modal（初始唔帶 flex，避免同 hidden 並存搞亂開關判斷） -->
   <div id="partial-settle-modal" onclick="if (event.target.id === 'partial-settle-modal') hidePartialSettleModal()"
-       class="modal-overlay hidden fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
+       class="modal-overlay hidden fixed inset-0 items-end sm:items-center justify-center p-0 sm:p-4">
     <div onclick="event.stopImmediatePropagation()"
          class="glass-sheet w-full sm:w-[440px] max-h-[90vh] flex flex-col rounded-t-[28px] sm:rounded-[28px]">
 
@@ -1705,7 +1705,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.4.3';
+    const APP_VERSION = '1.4.4';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/sansuanzi';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
@@ -3210,6 +3210,7 @@
         row.querySelector('.partial-settle-btn').addEventListener('click', (e) => {
           e.preventDefault();
           e.stopPropagation();
+          e.stopImmediatePropagation();
           partialSettle(s.from, s.to);
         });
         
@@ -4111,14 +4112,20 @@ ${SHARE_DATA_END}`;
       updatePartialSettleMaxHint();
     }
 
+    function isPartialSettleModalOpen() {
+      const modal = document.getElementById('partial-settle-modal');
+      // 注意：HTML 初始 class 同時有 hidden + flex；要以 hidden 判斷，唔好用 flex
+      return !!(modal && !modal.classList.contains('hidden'));
+    }
+
     function showPartialSettleModal() {
       const modal = document.getElementById('partial-settle-modal');
       if (!modal || !partialSettleState) return;
 
-      const wasOpen = modal.classList.contains('flex');
-      renderPartialSettleModalContent({ resetAmount: !wasOpen });
+      const alreadyOpen = isPartialSettleModalOpen();
+      renderPartialSettleModalContent({ resetAmount: !alreadyOpen });
 
-      if (!wasOpen) {
+      if (!alreadyOpen) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
         lockBodyScroll();
@@ -4128,9 +4135,9 @@ ${SHARE_DATA_END}`;
 
     function hidePartialSettleModal() {
       const modal = document.getElementById('partial-settle-modal');
-      if (modal && modal.classList.contains('flex')) {
-        modal.classList.remove('flex');
+      if (modal && isPartialSettleModalOpen()) {
         modal.classList.add('hidden');
+        modal.classList.remove('flex');
         unlockBodyScroll();
       }
       partialSettleState = null;
