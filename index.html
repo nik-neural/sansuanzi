@@ -1626,6 +1626,73 @@
     </div>
   </div>
 
+  <!-- 找部分金額 Modal -->
+  <div id="partial-settle-modal" onclick="if (event.target.id === 'partial-settle-modal') hidePartialSettleModal()"
+       class="modal-overlay hidden fixed inset-0 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div onclick="event.stopImmediatePropagation()"
+         class="glass-sheet w-full sm:w-[440px] max-h-[90vh] flex flex-col rounded-t-[28px] sm:rounded-[28px]">
+
+      <div class="shrink-0 p-6 sm:p-7 pb-4 border-b border-white/40">
+        <div class="flex justify-between items-start gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-hand-holding-dollar text-emerald-500 text-xl"></i>
+              <div class="font-bold text-xl">找部分金額</div>
+            </div>
+            <div id="partial-settle-subtitle" class="text-xs text-slate-500 mt-1 leading-relaxed"></div>
+          </div>
+          <button type="button" onclick="hidePartialSettleModal()"
+                  class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-slate-600 glass-control pressable shrink-0"
+                  aria-label="關閉">
+            <i class="fa-solid fa-times text-xl"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 min-h-0 overflow-y-auto px-6 sm:px-7 py-4 space-y-4">
+        <div>
+          <div class="text-sm font-semibold text-slate-600 mb-2">找畀邊個？</div>
+          <div id="partial-settle-creditor-list" class="space-y-2">
+            <!-- Populated by JS：撳人名揀 -->
+          </div>
+        </div>
+
+        <div>
+          <label for="partial-settle-amount" class="block text-sm font-semibold text-slate-600 mb-1.5">今次金額</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
+            <input id="partial-settle-amount" type="number" inputmode="decimal" min="0" step="0.01"
+                   placeholder="0.00"
+                   class="field-liquid w-full h-12 pl-8 pr-3 text-base font-semibold tabular-nums outline-none"
+                   oninput="updatePartialSettleMaxHint()">
+          </div>
+          <div id="partial-settle-max-hint" class="text-[10px] text-slate-400 mt-1.5 tabular-nums"></div>
+          <div class="flex flex-wrap gap-1.5 mt-2">
+            <button type="button" onclick="setPartialSettleAmountPreset('max')"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-emerald-700 font-medium pressable">全數</button>
+            <button type="button" onclick="setPartialSettleAmountPreset(0.5)"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">一半</button>
+            <button type="button" onclick="setPartialSettleAmountPreset(500)"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$500</button>
+            <button type="button" onclick="setPartialSettleAmountPreset(1000)"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$1000</button>
+            <button type="button" onclick="setPartialSettleAmountPreset(1500)"
+                    class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$1500</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shrink-0 p-6 sm:p-7 pt-4 border-t border-white/40 flex gap-3">
+        <button type="button" onclick="hidePartialSettleModal()"
+                class="flex-1 h-12 btn-liquid-ghost text-sm">取消</button>
+        <button type="button" id="partial-settle-confirm-btn" onclick="confirmPartialSettle()"
+                class="flex-1 h-12 btn-liquid-settle text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed">
+          確認已轉
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 items-center px-4" style="bottom: max(1.5rem, env(safe-area-inset-bottom))"></div>
 
@@ -1638,12 +1705,14 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.4.2';
+    const APP_VERSION = '1.4.3';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/sansuanzi';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
     let pendingImportActivity = null;
+    /** 找部分 modal 狀態：{ from, debtorRemaining, creditors, selectedTo } */
+    let partialSettleState = null;
 
     // 文字大小：標準 / 大 / 特大（改 root rem，整頁 Tailwind 字同間距跟住 scale）
     const TEXT_SIZE_LEVELS = [
@@ -3949,7 +4018,7 @@ ${SHARE_DATA_END}`;
       renderSettlement();
     }
 
-    /** 找部分金額（自己轉帳）— 按付款人總欠款計算，可選收款人 */
+    /** 找部分金額（自己轉帳）— 開 modal 撳人名揀收款人，唔使入數字 */
     function partialSettle(from, suggestedTo) {
       const act = getCurrentActivity();
       if (!act) return;
@@ -3961,7 +4030,6 @@ ${SHARE_DATA_END}`;
         return;
       }
 
-      // 列出所有有正結餘嘅人（應收方）
       const creditors = Object.entries(balances)
         .filter(([, v]) => v > 0.005)
         .map(([name, amount]) => ({ name, amount: Math.round(amount * 100) / 100 }))
@@ -3972,45 +4040,169 @@ ${SHARE_DATA_END}`;
         return;
       }
 
-      let to = suggestedTo;
       const suggestedStillValid = creditors.some(c => c.name === suggestedTo);
+      const selectedTo = suggestedStillValid
+        ? suggestedTo
+        : creditors[0].name;
 
-      if (creditors.length === 1) {
-        to = creditors[0].name;
-      } else {
-        // 多個收款人：用 prompt 列出
-        const list = creditors.map((c, i) => `${i + 1}. ${c.name}（應收 ${formatMoney(c.amount)}）`).join('\n');
-        const defaultIdx = suggestedStillValid
-          ? (creditors.findIndex(c => c.name === suggestedTo) + 1)
-          : 1;
-        const choice = prompt(
-          `「${from}」仲欠 ${formatMoney(debtorRemaining)}\n\n揀今次找畀邊個：\n${list}\n\n輸入數字（1-${creditors.length}）：`,
-          String(defaultIdx)
-        );
-        if (choice === null) return;
-        const idx = parseInt(choice, 10) - 1;
-        if (isNaN(idx) || idx < 0 || idx >= creditors.length) {
-          showToast('請輸入有效數字', 'error');
-          return;
-        }
-        to = creditors[idx].name;
+      partialSettleState = {
+        from,
+        debtorRemaining,
+        creditors,
+        selectedTo
+      };
+      showPartialSettleModal();
+    }
+
+    function getPartialSettleMaxAmount() {
+      if (!partialSettleState) return 0;
+      const { debtorRemaining, creditors, selectedTo } = partialSettleState;
+      const c = creditors.find(x => x.name === selectedTo);
+      const creditorRemaining = c ? c.amount : 0;
+      return Math.round(Math.min(debtorRemaining, creditorRemaining) * 100) / 100;
+    }
+
+    function renderPartialSettleModalContent(opts = {}) {
+      if (!partialSettleState) return;
+      const { resetAmount = false } = opts;
+      const { from, debtorRemaining, creditors, selectedTo } = partialSettleState;
+
+      const sub = document.getElementById('partial-settle-subtitle');
+      if (sub) {
+        sub.innerHTML = `<span class="font-semibold text-red-600">${escapeHtml(from)}</span> 仲欠 <span class="font-semibold tabular-nums text-slate-700">${formatMoney(debtorRemaining)}</span> · 撳下面人名揀今次找畀邊個`;
       }
 
-      const creditorRemaining = Math.round((balances[to] || 0) * 100) / 100;
-      const maxAmount = Math.min(debtorRemaining, creditorRemaining);
+      const list = document.getElementById('partial-settle-creditor-list');
+      if (list) {
+        list.innerHTML = '';
+        creditors.forEach(c => {
+          const selected = c.name === selectedTo;
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = selected
+            ? 'w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl text-left pressable border border-emerald-400/60 bg-emerald-50/80'
+            : 'w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-2xl text-left pressable glass-control';
+          btn.innerHTML = `
+            <div class="min-w-0 flex items-center gap-2.5">
+              <span class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${selected ? 'bg-emerald-500 text-white' : 'bg-white/70 text-slate-300 border border-slate-200'}">
+                <i class="fa-solid fa-${selected ? 'check' : 'user'} text-[10px]"></i>
+              </span>
+              <span class="font-semibold text-slate-800 truncate">${escapeHtml(c.name)}</span>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="font-bold tabular-nums text-violet-700 text-sm">+${formatMoney(c.amount)}</div>
+              <div class="text-[10px] text-violet-600">尚收</div>
+            </div>
+          `;
+          btn.addEventListener('click', () => selectPartialSettleRecipient(c.name));
+          list.appendChild(btn);
+        });
+      }
 
-      const input = prompt(
-        `「${from} 要俾 ${to}」\n輸入今次找數金額（最多 ${formatMoney(maxAmount)}）：`,
-        maxAmount.toFixed(2)
-      );
-      if (input === null) return;
+      const maxAmt = getPartialSettleMaxAmount();
+      const amountInput = document.getElementById('partial-settle-amount');
+      if (amountInput) {
+        const cur = parseFloat(amountInput.value);
+        if (resetAmount || !amountInput.value || isNaN(cur) || cur > maxAmt + 0.005) {
+          amountInput.value = maxAmt > 0 ? maxAmt.toFixed(2) : '';
+        }
+        amountInput.max = String(maxAmt);
+      }
+      updatePartialSettleMaxHint();
+    }
 
-      let amt = parseFloat(input);
-      if (isNaN(amt) || amt <= 0) {
-        showToast('請輸入有效金額', 'error');
+    function showPartialSettleModal() {
+      const modal = document.getElementById('partial-settle-modal');
+      if (!modal || !partialSettleState) return;
+
+      const wasOpen = modal.classList.contains('flex');
+      renderPartialSettleModalContent({ resetAmount: !wasOpen });
+
+      if (!wasOpen) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        lockBodyScroll();
+        setTimeout(() => document.getElementById('partial-settle-amount')?.focus(), 80);
+      }
+    }
+
+    function hidePartialSettleModal() {
+      const modal = document.getElementById('partial-settle-modal');
+      if (modal && modal.classList.contains('flex')) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        unlockBodyScroll();
+      }
+      partialSettleState = null;
+    }
+
+    function selectPartialSettleRecipient(name) {
+      if (!partialSettleState) return;
+      if (!partialSettleState.creditors.some(c => c.name === name)) return;
+      if (partialSettleState.selectedTo === name) return;
+      partialSettleState.selectedTo = name;
+      renderPartialSettleModalContent({ resetAmount: true });
+    }
+
+    function updatePartialSettleMaxHint() {
+      const hint = document.getElementById('partial-settle-max-hint');
+      const btn = document.getElementById('partial-settle-confirm-btn');
+      if (!partialSettleState) {
+        if (hint) hint.textContent = '';
+        if (btn) btn.disabled = true;
         return;
       }
-      amt = Math.round(Math.min(amt, maxAmount) * 100) / 100;
+      const maxAmt = getPartialSettleMaxAmount();
+      const { from, selectedTo } = partialSettleState;
+      if (hint) {
+        hint.textContent = selectedTo
+          ? `最多 ${formatMoney(maxAmt)}（${from} 尚欠 同 ${selectedTo} 尚收 取細）`
+          : '請先揀收款人';
+      }
+      const amountInput = document.getElementById('partial-settle-amount');
+      const amt = parseFloat(amountInput?.value || '');
+      if (btn) {
+        btn.disabled = !selectedTo || isNaN(amt) || amt <= 0 || amt > maxAmt + 0.005;
+      }
+    }
+
+    function setPartialSettleAmountPreset(kind) {
+      if (!partialSettleState) return;
+      const maxAmt = getPartialSettleMaxAmount();
+      if (maxAmt < 0.01) return;
+      let amt = maxAmt;
+      if (kind === 'max') {
+        amt = maxAmt;
+      } else if (kind === 0.5) {
+        amt = Math.round(maxAmt * 50) / 100;
+      } else if (typeof kind === 'number') {
+        amt = Math.min(maxAmt, kind);
+      }
+      amt = Math.round(amt * 100) / 100;
+      const amountInput = document.getElementById('partial-settle-amount');
+      if (amountInput) amountInput.value = amt.toFixed(2);
+      updatePartialSettleMaxHint();
+    }
+
+    function confirmPartialSettle() {
+      const act = getCurrentActivity();
+      if (!act || !partialSettleState) return;
+
+      const { from, debtorRemaining, selectedTo } = partialSettleState;
+      if (!selectedTo) {
+        showToast('請先揀找畀邊個', 'error');
+        return;
+      }
+
+      const maxAmt = getPartialSettleMaxAmount();
+      const amountInput = document.getElementById('partial-settle-amount');
+      let amt = parseFloat(amountInput?.value || '');
+      if (isNaN(amt) || amt <= 0) {
+        showToast('請輸入有效金額', 'error');
+        amountInput?.focus();
+        return;
+      }
+      amt = Math.round(Math.min(amt, maxAmt) * 100) / 100;
       if (amt < 0.01) {
         showToast('金額太細', 'error');
         return;
@@ -4019,17 +4211,19 @@ ${SHARE_DATA_END}`;
       const settled = ensureDirectSettlements(act);
       settled.push({
         from,
-        to,
+        to: selectedTo,
         amount: amt,
         settledAt: Date.now()
       });
       act.updatedAt = Date.now();
       saveToStorage();
+
       const stillOwes = Math.round(Math.max(0, debtorRemaining - amt) * 100) / 100;
+      hidePartialSettleModal();
       showToast(
         stillOwes >= 0.01
-          ? `已記錄 ${from} 找 ${to} ${formatMoney(amt)} · ${from} 尚欠 ${formatMoney(stillOwes)}`
-          : `已記錄 ${from} 找 ${to} ${formatMoney(amt)} · ${from} 已兩清`
+          ? `已記錄 ${from} 找 ${selectedTo} ${formatMoney(amt)} · ${from} 尚欠 ${formatMoney(stillOwes)}`
+          : `已記錄 ${from} 找 ${selectedTo} ${formatMoney(amt)} · ${from} 已兩清`
       );
       renderSettlement();
     }
