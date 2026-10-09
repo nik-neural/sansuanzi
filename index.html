@@ -782,6 +782,41 @@
       }
     }
 
+    .currency-pick {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.42);
+      color: #64748b;
+      box-shadow: var(--lg-shadow-sm);
+    }
+
+    .currency-pick[aria-pressed="true"] {
+      background: #7c3aed;
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 6px 16px rgba(124, 58, 237, 0.28);
+    }
+
+    .money-affix {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      line-height: 1;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+
+    .money-affix-violet { color: #8b5cf6; }
+    .money-affix-rose { color: #f43f5e; }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
@@ -874,6 +909,10 @@
       <div class="sm:hidden mb-4">
         <div class="hk-card p-4">
           <div class="text-xs font-semibold text-slate-500 mb-2">快速建立新活動</div>
+          <div class="flex gap-1.5 mb-2" role="group" aria-label="新活動貨幣">
+            <button type="button" data-draft-currency="HKD" onclick="setDraftCurrency('HKD')" class="currency-pick flex-1" aria-pressed="true">港幣 HK$</button>
+            <button type="button" data-draft-currency="JPY" onclick="setDraftCurrency('JPY')" class="currency-pick flex-1" aria-pressed="false">日圓 円</button>
+          </div>
           <div class="flex gap-2 min-w-0">
             <input id="quick-create-input" type="text" placeholder="例如：唱K + 食飯" 
                    class="field-liquid flex-1 min-w-0 h-11 text-sm outline-none"
@@ -953,6 +992,10 @@
                   class="w-9 h-9 flex items-center justify-center text-slate-400 hover:text-violet-500 glass-control pressable">
             <i class="fa-solid fa-pen text-sm"></i>
           </button>
+        </div>
+        <div class="mt-2 inline-flex items-center gap-1.5" role="group" aria-label="呢個活動嘅貨幣">
+          <button type="button" id="currency-btn-hkd" onclick="setActivityCurrency('HKD')" class="currency-pick" aria-pressed="true">港幣</button>
+          <button type="button" id="currency-btn-jpy" onclick="setActivityCurrency('JPY')" class="currency-pick" aria-pressed="false">日圓</button>
         </div>
         <div id="activity-date-row" class="hidden mt-2">
           <button type="button" onclick="showEditDatesModal()"
@@ -1081,11 +1124,11 @@
               
               <!-- Amount -->
               <div class="mb-3">
-                <label class="block text-xs font-semibold text-slate-600 mb-1.5">金額（HKD）</label>
+                <label id="expense-amount-label" class="block text-xs font-semibold text-slate-600 mb-1.5">金額（HKD）</label>
                 <div class="relative">
-                  <div class="absolute left-4 top-1/2 -mt-2 text-slate-400 font-medium">$</div>
-                  <input id="expense-amount" type="number" step="0.01" min="0.01" required placeholder="0.00"
-                         class="field-liquid w-full h-11 pl-8 pr-4 text-sm outline-none"
+                  <div class="money-affix" data-money-prefix>$</div>
+                  <input id="expense-amount" type="number" inputmode="decimal" step="0.01" min="0.01" required placeholder="0.00"
+                         class="field-liquid w-full h-11 pl-10 pr-4 text-sm outline-none"
                          oninput="syncFundMaxHint()">
                 </div>
               </div>
@@ -1098,9 +1141,9 @@
                 </label>
                 <div class="flex gap-2 items-center">
                   <div class="relative flex-1">
-                    <div class="absolute left-4 top-1/2 -mt-2 text-violet-500 font-medium">$</div>
-                    <input id="fund-paid" type="number" step="0.01" min="0" value="0"
-                           class="field-liquid w-full h-11 pl-8 pr-4 text-sm outline-none border-violet-200/60"
+                    <div class="money-affix money-affix-violet" data-money-prefix>$</div>
+                    <input id="fund-paid" type="number" inputmode="decimal" step="0.01" min="0" value="0"
+                           class="field-liquid w-full h-11 pl-10 pr-4 text-sm outline-none border-violet-200/60"
                            oninput="syncFundMaxHint()">
                   </div>
                   <div id="fund-paid-hint" class="text-[10px] text-violet-600 font-medium whitespace-nowrap min-w-[72px] text-right">餘額充足</div>
@@ -1308,6 +1351,15 @@
         </div>
         <p class="text-[10px] text-slate-400 mt-2">預設今日，可改。跨多日會自動顯示為外遊。</p>
       </div>
+
+      <div class="mt-5">
+        <label class="block text-sm font-semibold mb-2 text-slate-600">貨幣</label>
+        <div class="grid grid-cols-2 gap-2" role="group" aria-label="新活動貨幣">
+          <button type="button" data-draft-currency="HKD" onclick="setDraftCurrency('HKD')" class="currency-pick w-full" aria-pressed="true">港幣 HK$</button>
+          <button type="button" data-draft-currency="JPY" onclick="setDraftCurrency('JPY')" class="currency-pick w-full" aria-pressed="false">日圓 円</button>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-2">成個活動用同一種。日圓計整數，唔會自動換算。</p>
+      </div>
       
       <div class="mt-6 flex gap-3">
         <button onclick="hideCreateModal()" 
@@ -1386,27 +1438,27 @@
           <!-- 輸入框 - 獨立全寬，與提取側一致 -->
           <div class="mb-3">
             <div class="relative">
-              <div class="absolute left-3 top-1/2 -mt-2 text-violet-500">$</div>
-              <input id="fund-deposit-input" type="number" step="0.01" min="0" placeholder="輸入金額" 
-                     class="field-liquid w-full h-11 pl-8 pr-4 text-base outline-none">
+              <div class="money-affix money-affix-violet" data-money-prefix>$</div>
+              <input id="fund-deposit-input" type="number" inputmode="decimal" step="0.01" min="0" placeholder="輸入金額" 
+                     class="field-liquid w-full h-11 pl-10 pr-4 text-base outline-none">
             </div>
           </div>
 
           <!-- 快速按鈕 - 一行排列，與提取側一致 -->
           <div class="grid grid-cols-4 gap-2 mb-4">
-            <button onclick="quickAdjustFund(50)" 
+            <button id="fund-q-d-0" type="button" onclick="quickAdjustFund(50)" 
                     class="py-2 text-sm glass-control text-violet-600 pressable font-medium">
               +50
             </button>
-            <button onclick="quickAdjustFund(100)" 
+            <button id="fund-q-d-1" type="button" onclick="quickAdjustFund(100)" 
                     class="py-2 text-sm glass-control text-violet-600 pressable font-medium">
               +100
             </button>
-            <button onclick="quickAdjustFund(200)" 
+            <button id="fund-q-d-2" type="button" onclick="quickAdjustFund(200)" 
                     class="py-2 text-sm glass-control text-violet-600 pressable font-medium">
               +200
             </button>
-            <button onclick="quickAdjustFund(500)" 
+            <button id="fund-q-d-3" type="button" onclick="quickAdjustFund(500)" 
                     class="py-2 text-sm glass-control text-violet-600 pressable font-medium">
               +500
             </button>
@@ -1428,23 +1480,23 @@
           <!-- 輸入框 - 獨立全寬，與存入側一致 -->
           <div class="mb-3">
             <div class="relative">
-              <div class="absolute left-3 top-1/2 -mt-2 text-rose-500">$</div>
-              <input id="fund-withdraw-input" type="number" step="0.01" min="0" placeholder="輸入金額" 
-                     class="field-liquid w-full h-11 pl-8 pr-4 text-base outline-none border-rose-200/50">
+              <div class="money-affix money-affix-rose" data-money-prefix>$</div>
+              <input id="fund-withdraw-input" type="number" inputmode="decimal" step="0.01" min="0" placeholder="輸入金額" 
+                     class="field-liquid w-full h-11 pl-10 pr-4 text-base outline-none border-rose-200/50">
             </div>
           </div>
 
           <!-- 快速按鈕 - 一行排列，與存入側一致 -->
           <div class="grid grid-cols-3 gap-2 mb-4">
-            <button onclick="quickAdjustFund(-50)" 
+            <button id="fund-q-w-0" type="button" onclick="quickAdjustFund(-50)" 
                     class="py-2 text-sm glass-control text-rose-600 pressable font-medium">
               -50
             </button>
-            <button onclick="quickAdjustFund(-100)" 
+            <button id="fund-q-w-1" type="button" onclick="quickAdjustFund(-100)" 
                     class="py-2 text-sm glass-control text-rose-600 pressable font-medium">
               -100
             </button>
-            <button onclick="quickAdjustFund(-200)" 
+            <button id="fund-q-w-2" type="button" onclick="quickAdjustFund(-200)" 
                     class="py-2 text-sm glass-control text-rose-600 pressable font-medium">
               -200
             </button>
@@ -1660,10 +1712,10 @@
         <div>
           <label for="partial-settle-amount" class="block text-sm font-semibold text-slate-600 mb-1.5">今次金額</label>
           <div class="relative">
-            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">$</span>
+            <span class="money-affix" data-money-prefix>$</span>
             <input id="partial-settle-amount" type="number" inputmode="decimal" min="0" step="0.01"
                    placeholder="0.00"
-                   class="field-liquid w-full h-12 pl-8 pr-3 text-base font-semibold tabular-nums outline-none"
+                   class="field-liquid w-full h-12 pl-10 pr-3 text-base font-semibold tabular-nums outline-none"
                    oninput="updatePartialSettleMaxHint()">
           </div>
           <div id="partial-settle-max-hint" class="text-[10px] text-slate-400 mt-1.5 tabular-nums"></div>
@@ -1672,11 +1724,11 @@
                     class="text-[10px] px-2.5 h-7 glass-pill text-emerald-700 font-medium pressable">全數</button>
             <button type="button" onclick="setPartialSettleAmountPreset(0.5)"
                     class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">一半</button>
-            <button type="button" onclick="setPartialSettleAmountPreset(500)"
+            <button type="button" id="partial-q-0" onclick="setPartialSettleAmountPreset(500)"
                     class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$500</button>
-            <button type="button" onclick="setPartialSettleAmountPreset(1000)"
+            <button type="button" id="partial-q-1" onclick="setPartialSettleAmountPreset(1000)"
                     class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$1000</button>
-            <button type="button" onclick="setPartialSettleAmountPreset(1500)"
+            <button type="button" id="partial-q-2" onclick="setPartialSettleAmountPreset(1500)"
                     class="text-[10px] px-2.5 h-7 glass-pill text-slate-600 font-medium pressable">$1500</button>
           </div>
         </div>
@@ -1705,11 +1757,13 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.4.4';
+    const APP_VERSION = '1.5.0';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/sansuanzi';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
     const ACTIVITY_EXPORT_VERSION = 1;
+    const DRAFT_CURRENCY_KEY = 'sansuanzi_draft_currency';
+    let draftCurrency = 'HKD';
     let pendingImportActivity = null;
     /** 找部分 modal 狀態：{ from, debtorRemaining, creditors, selectedTo } */
     let partialSettleState = null;
@@ -1732,6 +1786,7 @@
             ensureDirectSettlements(act);
             ensureActivityDates(act);
             ensureFundBalance(act);
+            ensureActivityCurrency(act);
           });
         }
       } catch (e) {
@@ -1765,7 +1820,7 @@
     function setFundBalance(value) {
       const act = getCurrentActivity();
       if (!act) return;
-      act.fundBalance = Math.max(0, Math.round(value * 100) / 100);
+      act.fundBalance = Math.max(0, roundMoney(value, act));
       act.updatedAt = Date.now();
       saveToStorage();
     }
@@ -1797,6 +1852,7 @@
       modal.classList.add('flex');
       lockBodyScroll();
       updateFundDisplays();
+      applyCurrencyChrome(getCurrentActivity());
       // focus first input
       setTimeout(() => {
         const depositInput = document.getElementById('fund-deposit-input');
@@ -1850,7 +1906,7 @@
 
     function depositFromInput() {
       const input = document.getElementById('fund-deposit-input');
-      const val = parseFloat(input.value);
+      const val = roundMoney(parseFloat(input.value), getCurrentActivity());
       if (!val || val <= 0) {
         showToast('請輸入有效金額', 'error');
         return;
@@ -1862,7 +1918,7 @@
 
     function withdrawFromInput() {
       const input = document.getElementById('fund-withdraw-input');
-      const val = parseFloat(input.value);
+      const val = roundMoney(parseFloat(input.value), getCurrentActivity());
       if (!val || val <= 0) {
         showToast('請輸入有效金額', 'error');
         return;
@@ -1890,9 +1946,183 @@
       }, 2400);
     }
 
-    function formatMoney(amount) {
+    function activityCurrency(act) {
+      return act && act.currency === 'JPY' ? 'JPY' : 'HKD';
+    }
+
+    function ensureActivityCurrency(act) {
+      if (!act) return 'HKD';
+      if (act.currency !== 'JPY' && act.currency !== 'HKD') act.currency = 'HKD';
+      return act.currency;
+    }
+
+    function currencyLabel(act) {
+      return activityCurrency(act) === 'JPY' ? '日圓' : '港幣';
+    }
+
+    function moneyScale(act) {
+      return activityCurrency(act) === 'JPY' ? 1 : 100;
+    }
+
+    function roundMoney(amount, act) {
+      const scale = moneyScale(act);
+      const n = Number(amount);
+      if (!Number.isFinite(n)) return 0;
+      return Math.round(n * scale) / scale;
+    }
+
+    function moneyInputString(amount, act) {
+      const n = roundMoney(amount, act);
+      if (activityCurrency(act) === 'JPY') return String(Math.round(n));
+      return n.toFixed(2);
+    }
+
+    function formatMoney(amount, act) {
+      const source = act || getCurrentActivity();
       const n = Number(amount) || 0;
+      if (activityCurrency(source) === 'JPY') {
+        return Math.round(n).toLocaleString('ja-JP') + '円';
+      }
       return 'HK$' + n.toLocaleString('en-HK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function currencyPresets(act) {
+      if (activityCurrency(act) === 'JPY') {
+        return {
+          deposit: [1000, 3000, 5000, 10000],
+          withdraw: [1000, 3000, 5000],
+          partial: [1000, 3000, 5000],
+          prefix: '円',
+          step: '1',
+          minExpense: '1',
+          placeholder: '0',
+          inputMode: 'numeric'
+        };
+      }
+      return {
+        deposit: [50, 100, 200, 500],
+        withdraw: [50, 100, 200],
+        partial: [500, 1000, 1500],
+        prefix: '$',
+        step: '0.01',
+        minExpense: '0.01',
+        placeholder: '0.00',
+        inputMode: 'decimal'
+      };
+    }
+
+    function paintDraftCurrency() {
+      document.querySelectorAll('[data-draft-currency]').forEach(btn => {
+        btn.setAttribute('aria-pressed', btn.dataset.draftCurrency === draftCurrency ? 'true' : 'false');
+      });
+    }
+
+    function setDraftCurrency(cur) {
+      draftCurrency = cur === 'JPY' ? 'JPY' : 'HKD';
+      try {
+        sessionStorage.setItem(DRAFT_CURRENCY_KEY, draftCurrency);
+      } catch (e) { /* ignore */ }
+      paintDraftCurrency();
+    }
+
+    function loadDraftCurrency() {
+      try {
+        return sessionStorage.getItem(DRAFT_CURRENCY_KEY) === 'JPY' ? 'JPY' : 'HKD';
+      } catch (e) {
+        return 'HKD';
+      }
+    }
+
+    function activityHasMoney(act) {
+      if (!act) return false;
+      return (act.expenses || []).length > 0
+        || (Number(act.fundBalance) || 0) > 0
+        || (act.fundTransfers || []).length > 0
+        || (act.directSettlements || []).length > 0;
+    }
+
+    function roundActivityMoney(act) {
+      (act.expenses || []).forEach(exp => {
+        exp.amount = roundMoney(exp.amount, act);
+        exp.fundPaid = roundMoney(exp.fundPaid, act);
+      });
+      act.fundBalance = Math.max(0, roundMoney(act.fundBalance, act));
+      (act.fundTransfers || []).forEach(t => { t.amount = roundMoney(t.amount, act); });
+      (act.directSettlements || []).forEach(t => { t.amount = roundMoney(t.amount, act); });
+    }
+
+    function setActivityCurrency(next) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      next = next === 'JPY' ? 'JPY' : 'HKD';
+      if (activityCurrency(act) === next) {
+        setDraftCurrency(next);
+        return;
+      }
+      if (activityHasMoney(act)) {
+        const msg = next === 'JPY'
+          ? '轉做日圓唔會換算匯率。已入嘅數會當円，小數四捨五入成整數。確定？'
+          : '轉做港幣唔會換算匯率。已入嘅數會當港幣顯示。確定？';
+        if (!confirm(msg)) return;
+      }
+      act.currency = next;
+      if (next === 'JPY') roundActivityMoney(act);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      setDraftCurrency(next);
+      renderDetail();
+      updateFundDisplays();
+      showToast(next === 'JPY' ? '呢個活動用日圓' : '呢個活動用港幣');
+    }
+
+    function applyCurrencyChrome(act) {
+      const spec = currencyPresets(act);
+      const jpy = activityCurrency(act) === 'JPY';
+      const hkdBtn = document.getElementById('currency-btn-hkd');
+      const jpyBtn = document.getElementById('currency-btn-jpy');
+      if (hkdBtn) hkdBtn.setAttribute('aria-pressed', jpy ? 'false' : 'true');
+      if (jpyBtn) jpyBtn.setAttribute('aria-pressed', jpy ? 'true' : 'false');
+
+      const label = document.getElementById('expense-amount-label');
+      if (label) label.textContent = jpy ? '金額（日圓）' : '金額（HKD）';
+
+      document.querySelectorAll('[data-money-prefix]').forEach(el => {
+        el.textContent = spec.prefix;
+      });
+
+      const expense = document.getElementById('expense-amount');
+      if (expense) {
+        expense.step = spec.step;
+        expense.min = spec.minExpense;
+        expense.placeholder = spec.placeholder;
+        expense.inputMode = spec.inputMode;
+      }
+      ['fund-paid', 'fund-deposit-input', 'fund-withdraw-input', 'partial-settle-amount'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.step = spec.step;
+        el.inputMode = spec.inputMode;
+        if (id === 'partial-settle-amount') el.placeholder = spec.placeholder;
+      });
+
+      spec.deposit.forEach((n, i) => {
+        const btn = document.getElementById('fund-q-d-' + i);
+        if (!btn) return;
+        btn.textContent = '+' + n.toLocaleString('en-HK');
+        btn.onclick = () => quickAdjustFund(n);
+      });
+      spec.withdraw.forEach((n, i) => {
+        const btn = document.getElementById('fund-q-w-' + i);
+        if (!btn) return;
+        btn.textContent = '−' + n.toLocaleString('en-HK');
+        btn.onclick = () => quickAdjustFund(-n);
+      });
+      spec.partial.forEach((n, i) => {
+        const btn = document.getElementById('partial-q-' + i);
+        if (!btn) return;
+        btn.textContent = (jpy ? n.toLocaleString('ja-JP') + '円' : '$' + n.toLocaleString('en-HK'));
+        btn.onclick = () => setPartialSettleAmountPreset(n);
+      });
     }
 
     function getCurrentActivity() {
@@ -2180,12 +2410,12 @@
                   <span class="font-medium">${activity.expenses.length}</span>
                 </div>
               </div>
-              <div class="font-semibold tabular-nums text-violet-600">${formatMoney(total)}</div>
+              <div class="font-semibold tabular-nums text-violet-600">${formatMoney(total, activity)}</div>
             </div>
             
             <div class="mt-2 flex items-center gap-1.5 text-[10px] text-violet-600/80">
               <i class="fa-solid fa-coins text-[9px]"></i>
-              <span>阿公 ${formatMoney(ensureFundBalance(activity))}</span>
+              <span>阿公 ${formatMoney(ensureFundBalance(activity), activity)}</span>
             </div>
             
             <div class="mt-3 text-[10px] text-slate-400">
@@ -2208,7 +2438,7 @@
       const input = document.getElementById('quick-create-input');
       const name = input.value.trim() || '新活動';
       const today = getTodayISODate();
-      createNewActivity(name, today, today);
+      createNewActivity(name, today, today, draftCurrency);
       input.value = '';
     }
 
@@ -2235,10 +2465,10 @@
       const name = input.value.trim() || '新活動';
       const dates = readCreateModalDates();
       hideCreateModal();
-      createNewActivity(name, dates.dateStart, dates.dateEnd);
+      createNewActivity(name, dates.dateStart, dates.dateEnd, draftCurrency);
     }
 
-    function createNewActivity(name, dateStart = null, dateEnd = null) {
+    function createNewActivity(name, dateStart = null, dateEnd = null, currency = 'HKD') {
       const today = getTodayISODate();
       const dates = normalizeActivityDates(dateStart || today, dateEnd || today);
       const newAct = {
@@ -2246,6 +2476,7 @@
         name: name,
         dateStart: dates.dateStart,
         dateEnd: dates.dateEnd,
+        currency: currency === 'JPY' ? 'JPY' : 'HKD',
         participants: [],
         expenses: [],
         fundTransfers: [],
@@ -2532,7 +2763,7 @@
         showToast('請輸入項目名稱', 'error');
         return;
       }
-      const amount = parseFloat(amountStr);
+      const amount = roundMoney(parseFloat(amountStr), act);
       if (!amount || amount <= 0) {
         showToast('請輸入有效金額', 'error');
         return;
@@ -2543,7 +2774,7 @@
       }
       
       // 阿公墊支金額
-      let fundPaid = parseFloat(document.getElementById('fund-paid').value) || 0;
+      let fundPaid = roundMoney(parseFloat(document.getElementById('fund-paid').value) || 0, act);
       fundPaid = Math.max(0, Math.min(fundPaid, amount, getFundBalance())); // 不可超過金額或基金餘額
       
       if (editingExpenseId) {
@@ -2697,7 +2928,7 @@
       empty.classList.add('hidden');
       
       act.expenses.forEach(exp => {
-        const { fundPaid, amountToSplit, people, shares } = getExpenseSplitDetails(exp);
+        const { fundPaid, amountToSplit, people, shares } = getExpenseSplitDetails(exp, act);
         const payerShare = shares[exp.payer] || 0;
         const payerInSplit = people.includes(exp.payer);
         let payerLine = '';
@@ -2843,25 +3074,27 @@
 
     // ==================== Settlement Logic ====================
     // Largest remainder：將分帳金額拆成整數毫子，確保加總完全一致
-    function splitAmountEvenly(amount, people) {
+    function splitAmountEvenly(amount, people, act) {
       if (!people || people.length === 0) return {};
-      const totalCents = Math.round((Number(amount) || 0) * 100);
+      const scale = moneyScale(act);
+      const totalUnits = Math.round((Number(amount) || 0) * scale);
       const n = people.length;
-      const baseCents = Math.floor(totalCents / n);
-      const remainder = totalCents % n;
+      const base = Math.floor(totalUnits / n);
+      const remainder = totalUnits % n;
       const shares = {};
       people.forEach((name, i) => {
-        shares[name] = (baseCents + (i < remainder ? 1 : 0)) / 100;
+        shares[name] = (base + (i < remainder ? 1 : 0)) / scale;
       });
       return shares;
     }
 
-    function getExpenseSplitDetails(exp) {
+    function getExpenseSplitDetails(exp, act) {
+      const currencyAct = act || getCurrentActivity();
       const fundPaid = Number(exp.fundPaid) || 0;
       const amount = Number(exp.amount) || 0;
       const amountToSplit = Math.max(0, amount - fundPaid);
       const people = exp.splitWith || [];
-      const shares = people.length > 0 ? splitAmountEvenly(amountToSplit, people) : {};
+      const shares = people.length > 0 ? splitAmountEvenly(amountToSplit, people, currencyAct) : {};
       return { fundPaid, amount, amountToSplit, people, shares };
     }
 
@@ -2926,7 +3159,7 @@
       act.expenses.forEach(exp => {
         if (!exp.splitWith || exp.splitWith.length === 0) return;
         
-        const { amountToSplit, shares } = getExpenseSplitDetails(exp);
+        const { amountToSplit, shares } = getExpenseSplitDetails(exp, act);
         if (amountToSplit <= 0.005) return;
         
         exp.splitWith.forEach(p => {
@@ -2971,7 +3204,7 @@
 
       act.expenses.forEach(exp => {
         if (!exp.splitWith || exp.splitWith.length === 0) return;
-        const { amountToSplit, shares } = getExpenseSplitDetails(exp);
+        const { amountToSplit, shares } = getExpenseSplitDetails(exp, act);
         if (amountToSplit <= 0.005) return;
 
         paid[exp.payer] = (paid[exp.payer] || 0) + (Number(exp.amount) || 0);
@@ -3434,6 +3667,8 @@
       
       // Header name + date
       document.getElementById('activity-name-display').textContent = act.name;
+      ensureActivityCurrency(act);
+      applyCurrencyChrome(act);
       renderActivityDateDisplay();
       
       // Participants + form options
@@ -3488,27 +3723,28 @@
         name: act.name,
         dateStart: act.dateStart || null,
         dateEnd: act.dateEnd || null,
+        currency: activityCurrency(act),
         participants: [...(act.participants || [])],
         expenses: (act.expenses || []).map(exp => ({
           id: exp.id,
           payer: exp.payer || '',
           description: exp.description || '',
-          amount: Math.round((Number(exp.amount) || 0) * 100) / 100,
+          amount: roundMoney(exp.amount, act),
           splitWith: [...(exp.splitWith || [])],
-          fundPaid: Math.round((Number(exp.fundPaid) || 0) * 100) / 100,
+          fundPaid: roundMoney(exp.fundPaid, act),
           createdAt: exp.createdAt || Date.now()
         })),
-        fundBalance: Math.round(ensureFundBalance(act) * 100) / 100,
+        fundBalance: roundMoney(ensureFundBalance(act), act),
         fundTransfers: (act.fundTransfers || []).map(t => ({
           from: t.from || '',
           to: t.to || '',
-          amount: Math.round((Number(t.amount) || 0) * 100) / 100,
+          amount: roundMoney(t.amount, act),
           transferredAt: t.transferredAt || null
         })),
         directSettlements: (act.directSettlements || []).map(t => ({
           from: t.from || '',
           to: t.to || '',
-          amount: Math.round((Number(t.amount) || 0) * 100) / 100,
+          amount: roundMoney(t.amount, act),
           settledAt: t.settledAt || null
         })),
         createdAt: act.createdAt || Date.now(),
@@ -3533,6 +3769,7 @@
       const payload = buildActivityExportPayload(act);
       const json = JSON.stringify(payload);
       return `📋 神算子記帳資料｜${act.name}
+💱 ${currencyLabel(act)}
 👉 接手人：長撳全段複製 → 開神算子 → 撳「接手記帳」→ 貼上就得
 
 ${SHARE_DATA_START}
@@ -3615,11 +3852,12 @@ ${SHARE_DATA_END}`;
         name: raw.name.trim() || '接手活動',
         dateStart: raw.dateStart || null,
         dateEnd: raw.dateEnd || null,
+        currency: raw.currency === 'JPY' ? 'JPY' : 'HKD',
         participants: Array.isArray(raw.participants) ? raw.participants.map(p => String(p).trim()).filter(Boolean) : [],
         expenses: [],
         fundTransfers: [],
         directSettlements: [],
-        fundBalance: Math.max(0, Math.round((Number(raw.fundBalance) || 0) * 100) / 100),
+        fundBalance: Math.max(0, roundMoney(raw.fundBalance, { currency: raw.currency === 'JPY' ? 'JPY' : 'HKD' })),
         createdAt: raw.createdAt || Date.now(),
         updatedAt: Date.now()
       };
@@ -3633,9 +3871,9 @@ ${SHARE_DATA_END}`;
           id: exp.id || generateId(),
           payer: String(exp.payer || '').trim(),
           description: String(exp.description || '').trim() || '未命名開支',
-          amount: Math.max(0, Math.round((Number(exp.amount) || 0) * 100) / 100),
+          amount: Math.max(0, roundMoney(exp.amount, act)),
           splitWith: Array.isArray(exp.splitWith) ? exp.splitWith.map(p => String(p).trim()).filter(Boolean) : [],
-          fundPaid: Math.max(0, Math.round((Number(exp.fundPaid) || 0) * 100) / 100),
+          fundPaid: Math.max(0, roundMoney(exp.fundPaid, act)),
           createdAt: exp.createdAt || Date.now()
         })).filter(exp => exp.payer && exp.amount > 0 && exp.splitWith.length > 0);
       }
@@ -3644,7 +3882,7 @@ ${SHARE_DATA_END}`;
         act.fundTransfers = raw.fundTransfers.map(t => ({
           from: String(t.from || '').trim(),
           to: String(t.to || '').trim(),
-          amount: Math.max(0, Math.round((Number(t.amount) || 0) * 100) / 100),
+          amount: Math.max(0, roundMoney(t.amount, act)),
           transferredAt: t.transferredAt || Date.now()
         })).filter(t => t.from && t.to && t.amount > 0);
       }
@@ -3653,7 +3891,7 @@ ${SHARE_DATA_END}`;
         act.directSettlements = raw.directSettlements.map(t => ({
           from: String(t.from || '').trim(),
           to: String(t.to || '').trim(),
-          amount: Math.max(0, Math.round((Number(t.amount) || 0) * 100) / 100),
+          amount: Math.max(0, roundMoney(t.amount, act)),
           settledAt: t.settledAt || Date.now()
         })).filter(t => t.from && t.to && t.amount > 0);
       }
@@ -3740,7 +3978,7 @@ ${SHARE_DATA_END}`;
         if (preview) {
           preview.innerHTML = `
             <div class="font-semibold">${escapeHtml(normalized.name)}</div>
-            <div class="mt-1">${normalized.participants.length} 位參加者 • ${normalized.expenses.length} 筆開支 • 總計 ${formatMoney(total)}</div>
+            <div class="mt-1">${normalized.participants.length} 位參加者 • ${normalized.expenses.length} 筆開支 • ${currencyLabel(normalized)} • 總計 ${formatMoney(total, normalized)}</div>
             ${dateRange ? `<div class="mt-0.5 text-violet-700/80">${escapeHtml(dateRange)}</div>` : ''}
           `;
         }
@@ -3840,6 +4078,7 @@ ${SHARE_DATA_END}`;
       if (dateRange) {
         text += `📅 ${dateRange}${dateKind ? `（${dateKind.label}）` : ''}\n`;
       }
+      text += `💱 ${currencyLabel(act)}\n`;
       text += `${divider}\n`;
       text += `💰 總開支：${formatMoney(total)}\n`;
       text += `🧮 阿公餘額：${formatMoney(getFundBalance())}\n`;
@@ -3851,7 +4090,7 @@ ${SHARE_DATA_END}`;
       } else {
         text += `【開支記錄】共 ${act.expenses.length} 筆\n`;
         act.expenses.forEach((exp, i) => {
-          const { fundPaid, amountToSplit, people } = getExpenseSplitDetails(exp);
+          const { fundPaid, amountToSplit, people } = getExpenseSplitDetails(exp, act);
           const parts = [];
           if (exp.payer) parts.push(`${exp.payer} 俾`);
           if (fundPaid > 0.005) parts.push(`阿公墊 ${formatMoney(fundPaid)}`);
@@ -4104,8 +4343,9 @@ ${SHARE_DATA_END}`;
       const amountInput = document.getElementById('partial-settle-amount');
       if (amountInput) {
         const cur = parseFloat(amountInput.value);
+        const act = getCurrentActivity();
         if (resetAmount || !amountInput.value || isNaN(cur) || cur > maxAmt + 0.005) {
-          amountInput.value = maxAmt > 0 ? maxAmt.toFixed(2) : '';
+          amountInput.value = maxAmt > 0 ? moneyInputString(maxAmt, act) : '';
         }
         amountInput.max = String(maxAmt);
       }
@@ -4175,19 +4415,20 @@ ${SHARE_DATA_END}`;
 
     function setPartialSettleAmountPreset(kind) {
       if (!partialSettleState) return;
+      const act = getCurrentActivity();
       const maxAmt = getPartialSettleMaxAmount();
       if (maxAmt < 0.01) return;
       let amt = maxAmt;
       if (kind === 'max') {
         amt = maxAmt;
       } else if (kind === 0.5) {
-        amt = Math.round(maxAmt * 50) / 100;
+        amt = maxAmt / 2;
       } else if (typeof kind === 'number') {
         amt = Math.min(maxAmt, kind);
       }
-      amt = Math.round(amt * 100) / 100;
+      amt = roundMoney(amt, act);
       const amountInput = document.getElementById('partial-settle-amount');
-      if (amountInput) amountInput.value = amt.toFixed(2);
+      if (amountInput) amountInput.value = moneyInputString(amt, act);
       updatePartialSettleMaxHint();
     }
 
@@ -4209,8 +4450,9 @@ ${SHARE_DATA_END}`;
         amountInput?.focus();
         return;
       }
-      amt = Math.round(Math.min(amt, maxAmt) * 100) / 100;
-      if (amt < 0.01) {
+      amt = roundMoney(Math.min(amt, maxAmt), act);
+      const minAmt = activityCurrency(act) === 'JPY' ? 1 : 0.01;
+      if (amt < minAmt) {
         showToast('金額太細', 'error');
         return;
       }
@@ -4225,7 +4467,7 @@ ${SHARE_DATA_END}`;
       act.updatedAt = Date.now();
       saveToStorage();
 
-      const stillOwes = Math.round(Math.max(0, debtorRemaining - amt) * 100) / 100;
+      const stillOwes = roundMoney(Math.max(0, debtorRemaining - amt), act);
       hidePartialSettleModal();
       showToast(
         stillOwes >= 0.01
@@ -4381,6 +4623,8 @@ ${SHARE_DATA_END}`;
       initTailwind();
       applyTextSize(getTextSize(), { silent: true });
       loadFromStorage();
+      draftCurrency = loadDraftCurrency();
+      paintDraftCurrency();
       updateFundDisplays();
       
       // Show activities list by default
@@ -4437,7 +4681,7 @@ ${SHARE_DATA_END}`;
 
     function buildExpenseBreakdown(act) {
       return act.expenses.map(exp => {
-        const { fundPaid, amount, amountToSplit, people, shares } = getExpenseSplitDetails(exp);
+        const { fundPaid, amount, amountToSplit, people, shares } = getExpenseSplitDetails(exp, act);
         const payerShare = shares[exp.payer] || 0;
         const scope = getExpenseSplitScope(act, people);
         return {
@@ -4474,6 +4718,7 @@ ${SHARE_DATA_END}`;
         dateEnd: act.dateEnd || null,
         dayCount: getActivityDayCount(act),
         dateKind: getActivityDateKind(act)?.label || null,
+        currency: activityCurrency(act),
         participants: [...act.participants],
         expenseCount: act.expenses.length,
         totalExpenses: Math.round(act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100,
@@ -4558,6 +4803,7 @@ ${SHARE_DATA_END}`;
           if (focus.dateKind) text += `（${focus.dateKind}）`;
           text += `\n`;
         }
+        text += `貨幣：${focus.currency === 'JPY' ? '日圓' : '港幣'}\n`;
         text += `參加者：${focus.participants.join('、') || '（無）'}\n`;
         text += `總開支：${formatMoney(focus.totalExpenses)}（${focus.expenseCount} 筆）\n`;
         text += `帳面結餘總和（應為 0）：${focus.balanceSum}\n`;
@@ -4646,7 +4892,7 @@ ${SHARE_DATA_END}`;
         snapshot.activities
           .filter(a => a.id !== snapshot.currentActivityId)
           .forEach(a => {
-            text += `  • ${a.name}：${formatMoney(a.totalExpenses)}，${a.expenseCount} 筆，結餘總和 ${a.balanceSum}\n`;
+            text += `  • ${a.name}（${a.currency === 'JPY' ? '日圓' : '港幣'}）：${formatMoney(a.totalExpenses, a)}，${a.expenseCount} 筆，結餘總和 ${a.balanceSum}\n`;
           });
       }
 
@@ -4685,9 +4931,10 @@ ${SHARE_DATA_END}`;
     function showHelp() {
       const msg = `神算子 使用小貼士（v${APP_VERSION}）
 
-1. 建立活動（例如「唱K + 食飯」），可選填日期
+1. 建立活動（例如「唱K + 食飯」），可選日期同貨幣（港幣或日圓）
 2. 加入所有朋友名字
 3. 新增每筆開支：邊個俾錢、幾多錢、項目、參加者
+   日圓用整數。同一個活動只用一種貨幣，唔會自動換匯。
 4. 有需要可以開「阿公」— 每個活動有自己嘅公數，墊支同結算轉入
 5. 系統自動計算每人結餘同最少還款方案
 
