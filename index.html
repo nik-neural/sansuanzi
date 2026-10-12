@@ -1075,6 +1075,17 @@
             加入
           </button>
         </div>
+
+        <div class="mt-4 pt-4 border-t border-white/50">
+          <label for="chip-in-input" class="block text-xs font-semibold text-slate-600 mb-1.5">每人夾份</label>
+          <div class="relative">
+            <div class="money-affix" data-money-prefix>$</div>
+            <input id="chip-in-input" type="number" inputmode="decimal" min="0" step="0.01" placeholder="例如 30000"
+                   class="field-liquid w-full h-11 pl-10 pr-4 text-sm outline-none"
+                   oninput="onChipInInput()" onblur="onChipInBlur()">
+          </div>
+          <div id="chip-in-summary" class="mt-2 text-xs text-slate-500 leading-relaxed">每人一樣。用來計洗費同應退，唔算一筆開支。</div>
+        </div>
       </div>
 
       <!-- Stats -->
@@ -1132,6 +1143,14 @@
                          oninput="syncFundMaxHint()">
                 </div>
               </div>
+
+              <label id="from-chip-row" class="hidden mb-3 flex items-start gap-2.5 px-3 py-2.5 rounded-2xl bg-white/40 border border-white/50">
+                <input id="from-chip" type="checkbox" checked class="mt-0.5 w-4 h-4 accent-violet-500 shrink-0">
+                <span>
+                  <span class="block text-xs font-semibold text-slate-700">由夾份袋出</span>
+                  <span class="block text-[10px] text-slate-400 mt-0.5">預設剔住。自己碌卡就取消，應退會找返俾佢。</span>
+                </span>
+              </label>
 
               <!-- 阿公墊支 -->
               <div class="mb-3">
@@ -1302,7 +1321,7 @@
             <i class="fa-solid fa-table-list text-violet-500"></i>
             <span>每人明細（已付 / 應付 / 帳面 / 尚欠）</span>
           </div>
-          <p class="text-[10px] text-slate-400 mb-3">帳面結餘 = 已付 − 應付（只計開支）。尚收／尚欠 = 帳面扣咗已結清／阿公找數後仲要轉嘅數。</p>
+          <p id="person-breakdown-note" class="text-[10px] text-slate-400 mb-3">帳面結餘 = 已付 − 應付（只計開支）。尚收／尚欠 = 帳面扣咗已結清／阿公找數後仲要轉嘅數。</p>
           <div id="person-breakdown-list" class="space-y-2">
             <!-- Populated by JS -->
           </div>
@@ -1757,7 +1776,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.5.0';
+    const APP_VERSION = '1.5.1';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/sansuanzi';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
@@ -2033,12 +2052,137 @@
       }
     }
 
+    function getChipIn(act) {
+      const n = Number(act && act.chipIn);
+      if (!Number.isFinite(n) || n <= 0) return 0;
+      return roundMoney(n, act);
+    }
+
+    function computeChipFigures(act) {
+      const owed = {};
+      const personal = {};
+      const people = new Set(act.participants || []);
+      (act.expenses || []).forEach(exp => {
+        if (exp.payer) people.add(exp.payer);
+        (exp.splitWith || []).forEach(p => people.add(p));
+      });
+      people.forEach(p => { owed[p] = 0; personal[p] = 0; });
+      const chipOn = getChipIn(act) > 0;
+      (act.expenses || []).forEach(exp => {
+        const amount = Number(exp.amount) || 0;
+        if (amount <= 0) return;
+        const fromChip = chipOn && !!exp.fromChip;
+        const fundPaid = Math.min(Math.max(Number(exp.fundPaid) || 0, 0), amount);
+        const personalPart = fromChip ? 0 : roundMoney(amount - fundPaid, act);
+        if (exp.payer && personalPart > 0) {
+          personal[exp.payer] = roundMoney((personal[exp.payer] || 0) + personalPart, act);
+        }
+        const split = exp.splitWith || [];
+        if (!split.length) return;
+        const shares = splitAmountEvenly(amount, split, act);
+        split.forEach(p => {
+          owed[p] = roundMoney((owed[p] || 0) + (shares[p] || 0), act);
+        });
+      });
+      return { owed, personal };
+    }
+
+    function personChipRefund(act, name, personalPaid, spend) {
+      const chip = (act.participants || []).includes(name) ? getChipIn(act) : 0;
+      return roundMoney(chip + (Number(personalPaid) || 0) - (Number(spend) || 0), act);
+    }
+
+    function syncFromChipRow(act) {
+      const row = document.getElementById('from-chip-row');
+      if (!row) return;
+      row.classList.toggle('hidden', getChipIn(act) <= 0);
+    }
+
+    function chipRefundLabel(refund) {
+      if (refund < -0.005) return '應補';
+      if (refund > 0.005) return '應退';
+      return '兩清';
+    }
+
+    function onChipInInput() {
+      const act = getCurrentActivity();
+      const input = document.getElementById('chip-in-input');
+      if (!act || !input) return;
+      const raw = input.value.trim();
+      const n = raw === '' ? 0 : Number(raw);
+      act.chipIn = Number.isFinite(n) && n > 0 ? n : 0;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      syncFromChipRow(act);
+      renderChipInSummary();
+      renderPersonBreakdown(act);
+    }
+
+    function onChipInBlur() {
+      const act = getCurrentActivity();
+      const input = document.getElementById('chip-in-input');
+      if (!act || !input) return;
+      act.chipIn = getChipIn(act);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      input.value = act.chipIn > 0 ? moneyInputString(act.chipIn, act) : '';
+      syncFromChipRow(act);
+      renderChipInSummary();
+      renderPersonBreakdown(act);
+    }
+
+    function renderChipInField() {
+      const act = getCurrentActivity();
+      const input = document.getElementById('chip-in-input');
+      if (!act || !input) return;
+      if (document.activeElement !== input) {
+        const n = getChipIn(act);
+        input.value = n > 0 ? moneyInputString(n, act) : '';
+      }
+      syncFromChipRow(act);
+      renderChipInSummary();
+    }
+
+    function renderChipInSummary() {
+      const el = document.getElementById('chip-in-summary');
+      const act = getCurrentActivity();
+      if (!el || !act) return;
+      const chip = getChipIn(act);
+      const people = act.participants || [];
+      if (chip <= 0) {
+        el.textContent = '每人一樣。用來計洗費同應退，唔算一筆開支。';
+        return;
+      }
+      if (people.length === 0) {
+        el.textContent = `先加入朋友。夾份 ${formatMoney(chip, act)} 會套用到每個人。`;
+        return;
+      }
+      const total = roundMoney(chip * people.length, act);
+      const figs = computeChipFigures(act);
+      let refundSum = 0;
+      const rows = people.map(name => {
+        const spend = figs.owed[name] || 0;
+        const refund = personChipRefund(act, name, figs.personal[name] || 0, spend);
+        refundSum = roundMoney(refundSum + refund, act);
+        const label = chipRefundLabel(refund);
+        const refundClass = refund < -0.005 ? 'text-red-600' : 'text-violet-700';
+        return `<div class="grid grid-cols-[1fr_auto_auto] gap-x-3 items-baseline py-0.5">
+          <span class="font-medium text-slate-700 truncate">${escapeHtml(name)}</span>
+          <span class="tabular-nums text-slate-500">洗費 ${formatMoney(spend, act)}</span>
+          <span class="tabular-nums font-semibold ${refundClass}">${label} ${formatMoney(Math.abs(refund), act)}</span>
+        </div>`;
+      }).join('');
+      el.innerHTML = `<div class="text-slate-500 mb-1">${people.length} 人合共 ${formatMoney(total, act)} · 應退加埋 ${formatMoney(refundSum, act)}</div>${rows}
+        <div class="mt-1 text-[10px] text-slate-400">由夾份袋出的數唔當某人墊。自己碌卡就取消剔選。完團跟應退退錢，唔好再跟建議還款轉一次。</div>`;
+    }
+
     function activityHasMoney(act) {
       if (!act) return false;
       return (act.expenses || []).length > 0
         || (Number(act.fundBalance) || 0) > 0
         || (act.fundTransfers || []).length > 0
-        || (act.directSettlements || []).length > 0;
+        || (act.directSettlements || []).length > 0
+        || getChipIn(act) > 0;
     }
 
     function roundActivityMoney(act) {
@@ -2047,6 +2191,7 @@
         exp.fundPaid = roundMoney(exp.fundPaid, act);
       });
       act.fundBalance = Math.max(0, roundMoney(act.fundBalance, act));
+      if (act.chipIn) act.chipIn = Math.max(0, roundMoney(act.chipIn, act));
       (act.fundTransfers || []).forEach(t => { t.amount = roundMoney(t.amount, act); });
       (act.directSettlements || []).forEach(t => { t.amount = roundMoney(t.amount, act); });
     }
@@ -2097,12 +2242,13 @@
         expense.placeholder = spec.placeholder;
         expense.inputMode = spec.inputMode;
       }
-      ['fund-paid', 'fund-deposit-input', 'fund-withdraw-input', 'partial-settle-amount'].forEach(id => {
+      ['fund-paid', 'fund-deposit-input', 'fund-withdraw-input', 'partial-settle-amount', 'chip-in-input'].forEach(id => {
         const el = document.getElementById(id);
         if (!el) return;
         el.step = spec.step;
         el.inputMode = spec.inputMode;
         if (id === 'partial-settle-amount') el.placeholder = spec.placeholder;
+        if (id === 'chip-in-input') el.placeholder = jpy ? '例如 30000' : '例如 500';
       });
 
       spec.deposit.forEach((n, i) => {
@@ -2416,6 +2562,7 @@
             <div class="mt-2 flex items-center gap-1.5 text-[10px] text-violet-600/80">
               <i class="fa-solid fa-coins text-[9px]"></i>
               <span>阿公 ${formatMoney(ensureFundBalance(activity), activity)}</span>
+              ${getChipIn(activity) > 0 ? `<span class="text-slate-400">· 每人夾 ${formatMoney(getChipIn(activity), activity)}</span>` : ''}
             </div>
             
             <div class="mt-3 text-[10px] text-slate-400">
@@ -2598,6 +2745,8 @@
       renderPayerOptions();
       renderSplitOptions();
       renderStats();
+      renderChipInSummary();
+      renderPersonBreakdown(act);
       showToast(`已加入 ${name}`);
     }
 
@@ -2787,6 +2936,7 @@
           exp.amount = amount;
           exp.splitWith = splitWith;
           exp.fundPaid = fundPaid;
+          exp.fromChip = getChipIn(act) > 0 && !!document.getElementById('from-chip')?.checked;
           
           // 調整阿公餘額（編輯時的差額）
           const delta = oldFundPaid - fundPaid;
@@ -2803,6 +2953,7 @@
           amount,
           splitWith,
           fundPaid: fundPaid,
+          fromChip: getChipIn(act) > 0 && !!document.getElementById('from-chip')?.checked,
           createdAt: Date.now()
         });
         
@@ -2836,6 +2987,8 @@
       document.getElementById('expense-desc').value = exp.description;
       document.getElementById('expense-amount').value = exp.amount;
       document.getElementById('fund-paid').value = Number(exp.fundPaid) || 0;
+      const fromChipBox = document.getElementById('from-chip');
+      if (fromChipBox) fromChipBox.checked = !!exp.fromChip;
       
       // Render split with saved values
       renderSplitOptions(exp.splitWith);
@@ -2857,6 +3010,8 @@
       // 重置基金支付欄為 0
       const fundInput = document.getElementById('fund-paid');
       if (fundInput) fundInput.value = '0';
+      const fromChipBox = document.getElementById('from-chip');
+      if (fromChipBox) fromChipBox.checked = getChipIn(getCurrentActivity()) > 0;
       
       document.getElementById('expense-form-title').textContent = '新增開支';
       document.getElementById('expense-submit-btn').textContent = '新增開支';
@@ -2975,6 +3130,8 @@
                 <i class="fa-solid fa-user mr-1.5 text-amber-500"></i>
                 <span>${escapeHtml(exp.payer)} 俾</span>
               </div>
+              ${exp.fromChip && getChipIn(act) > 0 ? `
+              <div class="inline-flex items-center px-2 py-0.5 glass-pill text-slate-600 text-[10px] font-medium">夾份袋</div>` : ''}
               
               <div class="text-violet-600 font-medium tabular-nums">
                 ${formatMoney(exp.amount)}
@@ -3158,6 +3315,7 @@
       
       act.expenses.forEach(exp => {
         if (!exp.splitWith || exp.splitWith.length === 0) return;
+        if (exp.fromChip && getChipIn(act) > 0) return;
         
         const { amountToSplit, shares } = getExpenseSplitDetails(exp, act);
         if (amountToSplit <= 0.005) return;
@@ -3204,6 +3362,7 @@
 
       act.expenses.forEach(exp => {
         if (!exp.splitWith || exp.splitWith.length === 0) return;
+        if (exp.fromChip && getChipIn(act) > 0) return;
         const { amountToSplit, shares } = getExpenseSplitDetails(exp, act);
         if (amountToSplit <= 0.005) return;
 
@@ -3596,11 +3755,35 @@
       }
       empty.classList.add('hidden');
 
+      const chip = getChipIn(act);
+      const chipFigs = chip > 0 ? computeChipFigures(act) : null;
+      const note = document.getElementById('person-breakdown-note');
+      if (note) {
+        note.textContent = chip > 0
+          ? '洗費 = 分到佢身上嘅開支。應退 = 夾份 + 自己墊 − 洗費。'
+          : '帳面結餘 = 已付 − 應付（只計開支）。尚收／尚欠 = 帳面扣咗已結清／阿公找數後仲要轉嘅數。';
+      }
+
       summaries.forEach(({ name, paid, owed, bookBalance, remainingBalance, settledOut, settledIn }) => {
         const remAbs = Math.abs(remainingBalance);
         const isSettled = remAbs < 0.01;
         const isPositive = remainingBalance >= 0.005;
         const hasHandled = (settledOut > 0.005) || (settledIn > 0.005);
+        const spend = chipFigs ? (chipFigs.owed[name] || 0) : owed;
+        const refund = chip > 0 ? personChipRefund(act, name, chipFigs.personal[name] || 0, spend) : 0;
+        const refundLabel = chipRefundLabel(refund);
+        const chipBlock = chip > 0 ? `
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/70 border border-white/60">
+              <div class="text-[10px] text-slate-400">洗費</div>
+              <div class="font-semibold tabular-nums text-slate-800 mt-0.5">${formatMoney(spend)}</div>
+            </div>
+            <div class="px-2.5 py-1.5 rounded-xl bg-white/70 border border-white/60 text-right">
+              <div class="text-[10px] ${refund < -0.005 ? 'text-red-500' : 'text-violet-600'}">${refundLabel}</div>
+              <div class="font-bold tabular-nums ${refund < -0.005 ? 'text-red-600' : 'text-violet-700'} mt-0.5">${formatMoney(Math.abs(refund))}</div>
+            </div>
+          </div>
+        ` : '';
 
         const row = document.createElement('div');
         row.className = `px-3 py-3 rounded-2xl border ${isSettled ? 'glass-control' : isPositive ? 'balance-positive' : 'balance-negative'}`;
@@ -3617,6 +3800,7 @@
               </div>
             </div>
           </div>
+          ${chipBlock}
           <div class="grid grid-cols-2 gap-2 text-[11px]">
             <div class="px-2.5 py-1.5 rounded-xl bg-white/50 border border-white/50">
               <div class="text-slate-400">已付</div>
@@ -3688,6 +3872,7 @@
       
       // Settlement
       renderSettlement();
+      renderChipInField();
       
       // 確保基金支付提示正確
       syncFundMaxHint();
@@ -3724,6 +3909,7 @@
         dateStart: act.dateStart || null,
         dateEnd: act.dateEnd || null,
         currency: activityCurrency(act),
+        chipIn: getChipIn(act),
         participants: [...(act.participants || [])],
         expenses: (act.expenses || []).map(exp => ({
           id: exp.id,
@@ -3732,6 +3918,7 @@
           amount: roundMoney(exp.amount, act),
           splitWith: [...(exp.splitWith || [])],
           fundPaid: roundMoney(exp.fundPaid, act),
+          fromChip: !!exp.fromChip,
           createdAt: exp.createdAt || Date.now()
         })),
         fundBalance: roundMoney(ensureFundBalance(act), act),
@@ -3769,7 +3956,7 @@
       const payload = buildActivityExportPayload(act);
       const json = JSON.stringify(payload);
       return `📋 神算子記帳資料｜${act.name}
-💱 ${currencyLabel(act)}
+💱 ${currencyLabel(act)}${getChipIn(act) > 0 ? `\n🤝 每人夾份：${formatMoney(getChipIn(act), act)}` : ''}
 👉 接手人：長撳全段複製 → 開神算子 → 撳「接手記帳」→ 貼上就得
 
 ${SHARE_DATA_START}
@@ -3853,6 +4040,7 @@ ${SHARE_DATA_END}`;
         dateStart: raw.dateStart || null,
         dateEnd: raw.dateEnd || null,
         currency: raw.currency === 'JPY' ? 'JPY' : 'HKD',
+        chipIn: Math.max(0, roundMoney(raw.chipIn, { currency: raw.currency === 'JPY' ? 'JPY' : 'HKD' })),
         participants: Array.isArray(raw.participants) ? raw.participants.map(p => String(p).trim()).filter(Boolean) : [],
         expenses: [],
         fundTransfers: [],
@@ -3874,6 +4062,7 @@ ${SHARE_DATA_END}`;
           amount: Math.max(0, roundMoney(exp.amount, act)),
           splitWith: Array.isArray(exp.splitWith) ? exp.splitWith.map(p => String(p).trim()).filter(Boolean) : [],
           fundPaid: Math.max(0, roundMoney(exp.fundPaid, act)),
+          fromChip: exp.fromChip === true,
           createdAt: exp.createdAt || Date.now()
         })).filter(exp => exp.payer && exp.amount > 0 && exp.splitWith.length > 0);
       }
@@ -4079,6 +4268,11 @@ ${SHARE_DATA_END}`;
         text += `📅 ${dateRange}${dateKind ? `（${dateKind.label}）` : ''}\n`;
       }
       text += `💱 ${currencyLabel(act)}\n`;
+      const shareChip = getChipIn(act);
+      if (shareChip > 0) {
+        const sharePeople = act.participants || [];
+        text += `🤝 每人夾份：${formatMoney(shareChip)}（${sharePeople.length} 人合共 ${formatMoney(roundMoney(shareChip * sharePeople.length, act))}）\n`;
+      }
       text += `${divider}\n`;
       text += `💰 總開支：${formatMoney(total)}\n`;
       text += `🧮 阿公餘額：${formatMoney(getFundBalance())}\n`;
@@ -4111,8 +4305,21 @@ ${SHARE_DATA_END}`;
       }
 
       text += `${divider}\n`;
+      const summaries = computePersonSummaries(act);
+      const chip = getChipIn(act);
+      const chipFigs = chip > 0 ? computeChipFigures(act) : null;
+      if (chip > 0) {
+        text += `【每人洗費／應退】\n`;
+        (act.participants || []).forEach(name => {
+          const spend = chipFigs.owed[name] || 0;
+          const refund = personChipRefund(act, name, chipFigs.personal[name] || 0, spend);
+          text += `${name}：洗費 ${formatMoney(spend)}，${chipRefundLabel(refund)} ${formatMoney(Math.abs(refund))}\n`;
+        });
+        text += `完團跟應退由夾份袋退錢，唔好再跟建議還款轉一次。\n`;
+        text += `${divider}\n`;
+      }
       text += '【每人明細】帳面=已付−應付；尚收/尚欠=扣已還後\n';
-      computePersonSummaries(act).forEach(({ name, paid, owed, bookBalance, remainingBalance, settledOut, settledIn }) => {
+      summaries.forEach(({ name, paid, owed, bookBalance, remainingBalance, settledOut, settledIn }) => {
         const remAbs = Math.abs(remainingBalance);
         let line = `${name}：已付 ${formatMoney(paid)}，應付 ${formatMoney(owed)}，帳面 ${formatSignedBalance(bookBalance)}`;
         if ((settledOut > 0.005) || (settledIn > 0.005) || Math.abs(bookBalance - remainingBalance) >= 0.01) {
@@ -4719,6 +4926,7 @@ ${SHARE_DATA_END}`;
         dayCount: getActivityDayCount(act),
         dateKind: getActivityDateKind(act)?.label || null,
         currency: activityCurrency(act),
+        chipIn: getChipIn(act),
         participants: [...act.participants],
         expenseCount: act.expenses.length,
         totalExpenses: Math.round(act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100,
@@ -4804,6 +5012,7 @@ ${SHARE_DATA_END}`;
           text += `\n`;
         }
         text += `貨幣：${focus.currency === 'JPY' ? '日圓' : '港幣'}\n`;
+        text += `每人夾份：${focus.chipIn > 0 ? formatMoney(focus.chipIn, focus) : '無'}\n`;
         text += `參加者：${focus.participants.join('、') || '（無）'}\n`;
         text += `總開支：${formatMoney(focus.totalExpenses)}（${focus.expenseCount} 筆）\n`;
         text += `帳面結餘總和（應為 0）：${focus.balanceSum}\n`;
@@ -4932,7 +5141,7 @@ ${SHARE_DATA_END}`;
       const msg = `神算子 使用小貼士（v${APP_VERSION}）
 
 1. 建立活動（例如「唱K + 食飯」），可選日期同貨幣（港幣或日圓）
-2. 加入所有朋友名字
+2. 加入所有朋友名字。有夾份就喺「每人夾份」打一次（四人夾 120,000 就打 30000）
 3. 新增每筆開支：邊個俾錢、幾多錢、項目、參加者
    日圓用整數。同一個活動只用一種貨幣，唔會自動換匯。
 4. 有需要可以開「阿公」— 每個活動有自己嘅公數，墊支同結算轉入
