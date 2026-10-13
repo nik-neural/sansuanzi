@@ -774,6 +774,18 @@
       box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.28);
     }
 
+    .group-member-btn[aria-pressed="true"] {
+      background: rgba(124, 58, 237, 0.16);
+      border-color: rgba(109, 40, 217, 0.45);
+      color: #5b21b6;
+    }
+
+    .group-member-btn[aria-pressed="false"] {
+      background: rgba(255, 255, 255, 0.45);
+      border-color: rgba(255, 255, 255, 0.65);
+      color: #64748b;
+    }
+
     @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
       .glass-nav, .hk-card, .glass-card, .modal-sheet, .glass-sheet,
       .glass-pill, .glass-pill-wa, .glass-control, .expense-card, .fund-glass,
@@ -1086,6 +1098,19 @@
           </div>
           <div id="chip-in-summary" class="mt-2 text-xs text-slate-500 leading-relaxed">每人一樣。用來計洗費同應退，唔算一筆開支。</div>
         </div>
+
+        <div class="mt-4 pt-4 border-t border-white/50">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="text-xs font-semibold text-slate-600">分組</div>
+            <button type="button" onclick="addGroup()"
+                    class="shrink-0 text-xs font-medium text-violet-700 px-2.5 h-7 glass-pill pressable">
+              <i class="fa-solid fa-plus text-[10px] mr-0.5"></i>建組
+            </button>
+          </div>
+          <div id="groups-list"></div>
+          <p id="groups-ungrouped" class="mt-1 text-[10px] text-slate-400 leading-relaxed"></p>
+          <p class="mt-1 text-[10px] text-slate-400 leading-relaxed">冇分組就同以前一樣，逐人結算。有分組：同組之間唔出淨額，只睇組對組。呢組夾錢留空 = 每人夾份 × 人數。</p>
+        </div>
       </div>
 
       <!-- Stats -->
@@ -1239,6 +1264,23 @@
       <div class="mt-8">
         <div class="mb-3 px-1">
           <div class="section-title text-base flex items-center gap-2">
+            <i class="fa-solid fa-wallet text-violet-500"></i>
+            <span>旅程總結</span>
+          </div>
+        </div>
+
+        <div id="trip-summary-card" class="hk-card p-5 mb-4">
+          <div id="trip-summary-body" class="text-sm text-slate-600">暫未有數據</div>
+        </div>
+
+        <div id="group-settlement-card" class="hk-card p-5 mb-4 hidden">
+          <div class="text-sm font-semibold text-slate-700 mb-1">組對組結算</div>
+          <p id="group-settlement-basis" class="text-[10px] text-slate-400 mb-3 leading-relaxed"></p>
+          <div id="group-settlement-body" class="space-y-2"></div>
+        </div>
+
+        <div class="mb-3 px-1">
+          <div class="section-title text-base flex items-center gap-2">
             <i class="fa-solid fa-balance-scale text-violet-500"></i>
             <span>結算結果</span>
           </div>
@@ -1265,6 +1307,7 @@
           <!-- Suggested Settlements + 阿公操作 -->
           <div class="hk-card p-5">
             <div class="text-sm font-semibold text-slate-700 mb-1">建議還款方案（最少轉帳）</div>
+            <p id="settlements-group-hint" class="hidden text-[10px] text-slate-500 mb-2 leading-relaxed"></p>
             <p id="settlements-handled-hint" class="hidden text-[10px] text-emerald-700 mb-2 leading-relaxed"></p>
             <div id="settlements-list" class="space-y-2">
               <!-- Populated by JS -->
@@ -1319,9 +1362,9 @@
         <div class="hk-card p-5 mt-4">
           <div class="text-sm font-semibold text-slate-700 mb-1 flex items-center gap-2">
             <i class="fa-solid fa-table-list text-violet-500"></i>
-            <span>每人明細（已付 / 應付 / 帳面 / 尚欠）</span>
+            <span>每人明細（個人實際開支 / 已付 / 應付 / 夾錢 / 淨額）</span>
           </div>
-          <p id="person-breakdown-note" class="text-[10px] text-slate-400 mb-3">帳面結餘 = 已付 − 應付（只計開支）。尚收／尚欠 = 帳面扣咗已結清／阿公找數後仲要轉嘅數。</p>
+          <p id="person-breakdown-note" class="text-[10px] text-slate-400 mb-3">個人實際開支＝應付份額（你分到幾多）。帳面結餘 = 已付 − 應付。尚收／尚欠 = 帳面扣咗已結清／阿公找數後仲要轉嘅數。</p>
           <div id="person-breakdown-list" class="space-y-2">
             <!-- Populated by JS -->
           </div>
@@ -1776,7 +1819,7 @@
     const STORAGE_KEY = 'sansuanzi_activities';
     const LOCAL_NOTICE_KEY = 'sansuanzi_local_notice_dismissed';
     const TEXT_SIZE_KEY = 'sansuanzi_text_size';
-    const APP_VERSION = '1.5.1';
+    const APP_VERSION = '1.6.0';
     const APP_COPYRIGHT = '© 2026 nik-neural';
     const OFFICIAL_SOURCE_URL = 'https://github.com/nik-neural/sansuanzi';
     const ACTIVITY_EXPORT_FORMAT = 'sansuanzi-activity';
@@ -1806,6 +1849,8 @@
             ensureActivityDates(act);
             ensureFundBalance(act);
             ensureActivityCurrency(act);
+            ensureGroups(act);
+            roundGroupChips(act);
           });
         }
       } catch (e) {
@@ -2067,7 +2112,7 @@
         (exp.splitWith || []).forEach(p => people.add(p));
       });
       people.forEach(p => { owed[p] = 0; personal[p] = 0; });
-      const chipOn = getChipIn(act) > 0;
+      const chipOn = chipModeOn(act);
       (act.expenses || []).forEach(exp => {
         const amount = Number(exp.amount) || 0;
         if (amount <= 0) return;
@@ -2088,14 +2133,578 @@
     }
 
     function personChipRefund(act, name, personalPaid, spend) {
-      const chip = (act.participants || []).includes(name) ? getChipIn(act) : 0;
+      const chip = getPersonChipIn(act, name);
       return roundMoney(chip + (Number(personalPaid) || 0) - (Number(spend) || 0), act);
+    }
+
+    function ensureGroups(act) {
+      if (!act) return [];
+      if (!Array.isArray(act.groups)) act.groups = [];
+      const seen = new Set();
+      act.groups = act.groups.filter(g => g && typeof g === 'object');
+      act.groups.forEach(g => {
+        if (!g.id) g.id = generateId();
+        if (typeof g.name !== 'string') g.name = '';
+        if (!Array.isArray(g.members)) g.members = [];
+        g.members = g.members.map(m => String(m).trim()).filter(Boolean).filter(m => {
+          if (seen.has(m)) return false;
+          seen.add(m);
+          return true;
+        });
+        const n = Number(g.chipTotal);
+        if (!Number.isFinite(n) || n <= 0) g.chipTotal = null;
+        else g.chipTotal = n;
+      });
+      return act.groups;
+    }
+
+    function roundGroupChips(act) {
+      if (!act) return;
+      ensureGroups(act).forEach(g => {
+        if (g.chipTotal == null) return;
+        const r = roundMoney(g.chipTotal, act);
+        g.chipTotal = r > 0 ? r : null;
+      });
+    }
+
+    function explicitGroupChip(group, act) {
+      const n = Number(group && group.chipTotal);
+      if (!Number.isFinite(n) || n <= 0) return 0;
+      return roundMoney(n, act);
+    }
+
+    function chipModeOn(act) {
+      if (!act) return false;
+      if (getChipIn(act) > 0) return true;
+      return ensureGroups(act).some(g => explicitGroupChip(g, act) > 0);
+    }
+
+    function getPersonChipIn(act, name) {
+      if (!act || !(act.participants || []).includes(name)) return 0;
+      const g = ensureGroups(act).find(gr => (gr.members || []).includes(name));
+      const groupTotal = g ? explicitGroupChip(g, act) : 0;
+      if (g && groupTotal > 0) {
+        const members = (g.members || []).filter(m => (act.participants || []).includes(m));
+        if (!members.length) return 0;
+        return splitAmountEvenly(groupTotal, members, act)[name] || 0;
+      }
+      return getChipIn(act);
+    }
+
+    function activityChipTotal(act) {
+      const people = (act && act.participants) || [];
+      const override = ensureGroups(act).some(g => explicitGroupChip(g, act) > 0);
+      if (!override) return roundMoney(getChipIn(act) * people.length, act);
+      return roundMoney(people.reduce((s, name) => s + getPersonChipIn(act, name), 0), act);
+    }
+
+    function displayedGroupChip(act, group) {
+      const explicit = explicitGroupChip(group, act);
+      const members = (group.members || []).filter(m => (act.participants || []).includes(m));
+      if (!members.length) return explicit;
+      return roundMoney(members.reduce((s, m) => s + getPersonChipIn(act, m), 0), act);
+    }
+
+    function ledgerPeople(act) {
+      const people = new Set(act.participants || []);
+      (act.expenses || []).forEach(e => {
+        if (e.payer) people.add(e.payer);
+        (e.splitWith || []).forEach(p => { if (p) people.add(p); });
+      });
+      return [...people];
+    }
+
+    function hasNamedGroups(act) {
+      const known = new Set(ledgerPeople(act));
+      return ensureGroups(act).some(g => (g.members || []).some(m => known.has(m)));
+    }
+
+    function buildSpendCache(act) {
+      const chipOn = chipModeOn(act);
+      const figs = computeChipFigures(act);
+      const spend = {};
+      if (chipOn) {
+        Object.entries(figs.owed).forEach(([k, v]) => { spend[k] = roundMoney(v, act); });
+      } else {
+        computePersonSummaries(act).forEach(s => { spend[s.name] = s.owed; });
+      }
+      return { chipOn, figs, spend };
+    }
+
+    function personActualSpend(act, name, cache) {
+      const src = cache || buildSpendCache(act);
+      return roundMoney(src.spend[name] || 0, act);
+    }
+
+    function distributeByWeight(totalUnits, weights) {
+      const out = {};
+      if (!weights.length || totalUnits <= 0) return out;
+      const sumW = weights.reduce((s, w) => s + w.weight, 0);
+      if (sumW <= 0) return out;
+      const rows = weights.map(w => {
+        const exact = totalUnits * w.weight / sumW;
+        const floor = Math.floor(exact);
+        return { key: w.key, floor, frac: exact - floor };
+      });
+      let left = totalUnits - rows.reduce((s, r) => s + r.floor, 0);
+      rows.sort((a, b) => (b.frac - a.frac) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+      rows.forEach(r => {
+        if (left > 0) { r.floor += 1; left -= 1; }
+      });
+      rows.forEach(r => { out[r.key] = r.floor; });
+      return out;
+    }
+
+    /** 組內抵銷後，每人仲要對外收／俾嘅份。總和等於組淨額。 */
+    function allocateExternalNets(members, positions, act) {
+      const scale = moneyScale(act);
+      const units = {};
+      let pos = 0;
+      let neg = 0;
+      members.forEach(m => {
+        const u = Math.round((Number(positions[m]) || 0) * scale);
+        units[m] = u;
+        if (u > 0) pos += u;
+        else if (u < 0) neg += -u;
+      });
+      const net = pos - neg;
+      const outUnits = {};
+      members.forEach(m => { outUnits[m] = 0; });
+      if (members.length === 1 || pos === 0 || neg === 0) {
+        members.forEach(m => { outUnits[m] = units[m]; });
+      } else if (net !== 0) {
+        const positive = net > 0;
+        const weights = members
+          .filter(m => positive ? units[m] > 0 : units[m] < 0)
+          .map(m => ({ key: m, weight: Math.abs(units[m]) }));
+        const shares = distributeByWeight(Math.abs(net), weights);
+        const sign = positive ? 1 : -1;
+        weights.forEach(w => { outUnits[w.key] = sign * (shares[w.key] || 0); });
+      }
+      const sumU = members.reduce((s, m) => s + (outUnits[m] || 0), 0);
+      const drift = net - sumU;
+      if (drift !== 0 && members.length) {
+        const host = members.slice().sort((a, b) => Math.abs(units[b]) - Math.abs(units[a]) || (a < b ? -1 : 1))[0];
+        outUnits[host] += drift;
+      }
+      const out = {};
+      members.forEach(m => { out[m] = outUnits[m] / scale; });
+      return out;
+    }
+
+    function assignPartyLabels(parties) {
+      const counts = {};
+      parties.forEach(p => {
+        const base = p.grouped ? p.name : `${p.name}（未入組）`;
+        p.baseLabel = base;
+        counts[base] = (counts[base] || 0) + 1;
+      });
+      const seen = {};
+      parties.forEach(p => {
+        if (counts[p.baseLabel] === 1) {
+          p.label = p.baseLabel;
+          return;
+        }
+        seen[p.baseLabel] = (seen[p.baseLabel] || 0) + 1;
+        p.label = `${p.baseLabel} ${seen[p.baseLabel]}`;
+      });
+    }
+
+    function settleParties(act, people, positions) {
+      const assigned = new Set();
+      const parties = [];
+      ensureGroups(act).forEach(g => {
+        const members = [];
+        (g.members || []).forEach(m => {
+          if (assigned.has(m) || !people.includes(m)) return;
+          assigned.add(m);
+          members.push(m);
+        });
+        if (!members.length) return;
+        const balance = roundMoney(members.reduce((s, m) => s + (positions[m] || 0), 0), act);
+        parties.push({
+          id: g.id,
+          name: (g.name || '').trim() || '未命名組',
+          members,
+          balance,
+          grouped: true,
+          chipTotal: displayedGroupChip(act, g)
+        });
+      });
+      people.forEach(name => {
+        if (assigned.has(name)) return;
+        parties.push({
+          id: 'solo:' + name,
+          name,
+          members: [name],
+          balance: roundMoney(positions[name] || 0, act),
+          grouped: false,
+          chipTotal: getPersonChipIn(act, name)
+        });
+      });
+      assignPartyLabels(parties);
+      const external = {};
+      parties.forEach(p => {
+        Object.assign(external, allocateExternalNets(p.members, positions, act));
+      });
+      const partyBal = {};
+      parties.forEach(p => { partyBal[p.id] = p.balance; });
+      const labelById = {};
+      parties.forEach(p => { labelById[p.id] = p.label; });
+      const settlements = computeSettlements(partyBal).map(s => ({
+        fromId: s.from,
+        toId: s.to,
+        from: labelById[s.from] || s.from,
+        to: labelById[s.to] || s.to,
+        amount: s.amount
+      }));
+      return { parties, settlements, external };
+    }
+
+    function positionWord(kind, value) {
+      if (Math.abs(value) < 0.005) return '兩清';
+      if (kind === 'chip') return value > 0 ? '應退' : '應補';
+      return value > 0 ? '尚收' : '尚欠';
+    }
+
+    function computeGroupReport(act) {
+      const cache = buildSpendCache(act);
+      const people = ledgerPeople(act);
+      const balances = computeEffectiveBalances(act);
+      const ledgerPos = {};
+      const chipPos = {};
+      people.forEach(p => {
+        ledgerPos[p] = roundMoney(balances[p] || 0, act);
+        if (cache.chipOn) {
+          chipPos[p] = personChipRefund(act, p, cache.figs.personal[p] || 0, cache.figs.owed[p] || 0);
+        }
+      });
+      const primaryKind = cache.chipOn ? 'chip' : 'ledger';
+      const primaryPos = cache.chipOn ? chipPos : ledgerPos;
+      const primaryView = settleParties(act, people, primaryPos);
+      const ledgerMeaningful = Object.values(ledgerPos).some(v => Math.abs(v) >= 0.01);
+      const ledgerView = cache.chipOn && ledgerMeaningful ? settleParties(act, people, ledgerPos) : null;
+      return {
+        chipOn: cache.chipOn,
+        cache,
+        primaryKind,
+        primaryView,
+        ledgerView,
+        chipTotal: activityChipTotal(act),
+        expenseTotal: (act.expenses || []).reduce((s, e) => s + (Number(e.amount) || 0), 0)
+      };
+    }
+
+    function refreshLedgerViews() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      renderStats();
+      renderChipInSummary();
+      renderSettlement();
+    }
+
+    function addGroup() {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const groups = ensureGroups(act);
+      groups.push({
+        id: generateId(),
+        name: `第${groups.length + 1}組`,
+        members: [],
+        chipTotal: null
+      });
+      act.updatedAt = Date.now();
+      saveToStorage();
+      renderGroups();
+      refreshLedgerViews();
+    }
+
+    function removeGroup(groupId) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      act.groups = ensureGroups(act).filter(g => g.id !== groupId);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      renderGroups();
+      refreshLedgerViews();
+    }
+
+    function toggleGroupMember(groupId, name) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const groups = ensureGroups(act);
+      const target = groups.find(g => g.id === groupId);
+      if (!target) return;
+      const wasIn = target.members.includes(name);
+      groups.forEach(g => { g.members = g.members.filter(m => m !== name); });
+      if (!wasIn) target.members.push(name);
+      act.updatedAt = Date.now();
+      saveToStorage();
+      renderGroups();
+      refreshLedgerViews();
+    }
+
+    function onGroupNameInput(groupId, value) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const g = ensureGroups(act).find(x => x.id === groupId);
+      if (!g) return;
+      g.name = value;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      refreshLedgerViews();
+    }
+
+    function onGroupChipInput(groupId, value) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const g = ensureGroups(act).find(x => x.id === groupId);
+      if (!g) return;
+      const raw = String(value).trim();
+      const n = raw === '' ? 0 : Number(raw);
+      g.chipTotal = Number.isFinite(n) && n > 0 ? n : null;
+      act.updatedAt = Date.now();
+      saveToStorage();
+      syncFromChipRow(act);
+      refreshLedgerViews();
+    }
+
+    function onGroupChipBlur(groupId, input) {
+      const act = getCurrentActivity();
+      if (!act) return;
+      const g = ensureGroups(act).find(x => x.id === groupId);
+      if (!g) return;
+      if (g.chipTotal != null) {
+        const r = roundMoney(g.chipTotal, act);
+        g.chipTotal = r > 0 ? r : null;
+      }
+      act.updatedAt = Date.now();
+      saveToStorage();
+      if (input) input.value = g.chipTotal ? moneyInputString(g.chipTotal, act) : '';
+      syncFromChipRow(act);
+      refreshLedgerViews();
+    }
+
+    function renderGroups() {
+      const act = getCurrentActivity();
+      const list = document.getElementById('groups-list');
+      const ungroupedEl = document.getElementById('groups-ungrouped');
+      if (!act || !list) return;
+      const groups = ensureGroups(act);
+      const spec = currencyPresets(act);
+      list.innerHTML = '';
+      if (!groups.length) {
+        const empty = document.createElement('p');
+        empty.className = 'text-[11px] text-slate-400';
+        empty.textContent = '未分組。逐人結算，同而家一樣。';
+        list.appendChild(empty);
+      }
+      groups.forEach(g => {
+        const box = document.createElement('div');
+        box.className = 'mb-2 p-3 rounded-2xl bg-white/40 border border-white/55';
+        const memberSet = new Set(g.members || []);
+        const chipVal = g.chipTotal ? moneyInputString(g.chipTotal, act) : '';
+        const chipNow = displayedGroupChip(act, g);
+        box.innerHTML = `
+          <div class="flex items-center gap-2 mb-2">
+            <input type="text" maxlength="24" aria-label="組名"
+                   class="group-name-input field-liquid flex-1 min-w-0 h-9 px-3 text-sm outline-none">
+            <button type="button" class="group-remove-btn shrink-0 w-9 h-9 glass-control text-slate-400 hover:text-red-500 pressable" aria-label="刪除組">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+          </div>
+          <div class="group-member-row flex flex-wrap gap-1.5 mb-2"></div>
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="text-[10px] font-semibold text-slate-500">呢組夾錢</label>
+            <div class="relative w-36">
+              <div class="money-affix" data-money-prefix>${escapeHtml(spec.prefix)}</div>
+              <input type="number" inputmode="${spec.inputMode}" min="0" step="${spec.step}"
+                     placeholder="留空跟每人" aria-label="呢組夾錢"
+                     class="group-chip-input field-liquid w-full h-9 pl-8 pr-2 text-sm outline-none">
+            </div>
+            <span class="text-[10px] text-slate-400 tabular-nums">組夾錢 ${formatMoney(chipNow, act)}</span>
+          </div>
+        `;
+        const nameInput = box.querySelector('.group-name-input');
+        nameInput.value = g.name || '';
+        nameInput.addEventListener('input', (e) => onGroupNameInput(g.id, e.target.value));
+        box.querySelector('.group-remove-btn').addEventListener('click', () => removeGroup(g.id));
+        const memberRow = box.querySelector('.group-member-row');
+        if (!(act.participants || []).length) {
+          memberRow.innerHTML = '<span class="text-[11px] text-slate-400">先加入朋友，再撳個名拉入組</span>';
+        } else {
+          act.participants.forEach(name => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'group-member-btn text-xs font-medium px-2.5 h-7 rounded-full border pressable';
+            btn.setAttribute('aria-pressed', memberSet.has(name) ? 'true' : 'false');
+            btn.textContent = name;
+            btn.addEventListener('click', () => toggleGroupMember(g.id, name));
+            memberRow.appendChild(btn);
+          });
+        }
+        const chipInput = box.querySelector('.group-chip-input');
+        chipInput.value = chipVal;
+        chipInput.addEventListener('input', () => onGroupChipInput(g.id, chipInput.value));
+        chipInput.addEventListener('blur', () => onGroupChipBlur(g.id, chipInput));
+        list.appendChild(box);
+      });
+      if (ungroupedEl) {
+        const taken = new Set();
+        groups.forEach(g => (g.members || []).forEach(m => taken.add(m)));
+        const left = (act.participants || []).filter(n => !taken.has(n));
+        ungroupedEl.textContent = left.length ? `未入組：${left.join('、')}` : (groups.length ? '所有朋友都已入組。' : '');
+      }
+    }
+
+    function renderTripSummary(act) {
+      const el = document.getElementById('trip-summary-body');
+      if (!el || !act) return;
+      const report = computeGroupReport(act);
+      const cache = report.cache;
+      const summaries = computePersonSummaries(act);
+      const byName = {};
+      summaries.forEach(s => { byName[s.name] = s; });
+      const people = ledgerPeople(act);
+      const groupLines = ensureGroups(act)
+        .filter(g => (g.members || []).length)
+        .map(g => {
+          const total = displayedGroupChip(act, g);
+          const name = (g.name || '').trim() || '未命名組';
+          return `<div class="flex items-baseline justify-between gap-3 text-xs text-slate-600">
+            <span class="truncate">${escapeHtml(name)} · ${(g.members || []).map(m => escapeHtml(m)).join('、')}</span>
+            <span class="tabular-nums shrink-0">夾錢 ${formatMoney(total, act)}</span>
+          </div>`;
+        }).join('');
+      const personLines = people.map(name => {
+        const actual = personActualSpend(act, name, cache);
+        const row = byName[name];
+        const paid = row ? row.paid : 0;
+        const owed = row ? row.owed : 0;
+        const remaining = row ? row.remainingBalance : 0;
+        const chip = getPersonChipIn(act, name);
+        const refund = cache.chipOn
+          ? personChipRefund(act, name, cache.figs.personal[name] || 0, cache.figs.owed[name] || 0)
+          : 0;
+        const extra = cache.chipOn
+          ? `夾錢 ${formatMoney(chip, act)} · 已付 ${formatMoney(paid, act)} · 應付 ${formatMoney(owed, act)} · ${chipRefundLabel(refund)} ${formatMoney(Math.abs(refund), act)} · 淨額 ${formatSignedBalance(remaining)}`
+          : `已付 ${formatMoney(paid, act)} · 應付 ${formatMoney(owed, act)} · 淨額 ${formatSignedBalance(remaining)}`;
+        let externalBit = '';
+        if (hasNamedGroups(act)) {
+          const party = report.primaryView.parties.find(p => p.grouped && p.members.includes(name));
+          if (party) {
+            const ext = report.primaryView.external[name] || 0;
+            externalBit = `<div class="text-[10px] text-violet-700/90 mt-0.5">組對組之後 · ${escapeHtml(party.label)} · ${positionWord(report.primaryKind, ext)} ${formatMoney(Math.abs(ext), act)}</div>`;
+          }
+        }
+        return `<div class="px-3 py-2 rounded-2xl bg-white/50 border border-white/60">
+          <div class="flex items-baseline justify-between gap-3">
+            <span class="font-semibold text-slate-800 truncate">${escapeHtml(name)}</span>
+            <span class="font-bold tabular-nums text-slate-900 shrink-0">${formatMoney(actual, act)}</span>
+          </div>
+          <div class="text-[10px] text-slate-400 mt-0.5 leading-relaxed">${extra}</div>
+          ${externalBit}
+        </div>`;
+      }).join('');
+      const basis = cache.chipOn
+        ? '個人實際開支＝洗費（包括由夾份袋出）。應退＝夾錢＋自己墊−洗費。應付份額仍然只計未入夾份袋嘅數。'
+        : '個人實際開支＝應付份額。淨額＝尚收／尚欠。';
+      el.innerHTML = `
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div class="px-3 py-2 rounded-2xl bg-white/60 border border-white/60">
+            <div class="text-[10px] text-slate-400">旅程總費用</div>
+            <div class="font-bold tabular-nums text-lg text-slate-900">${formatMoney(report.expenseTotal, act)}</div>
+          </div>
+          <div class="px-3 py-2 rounded-2xl bg-white/60 border border-white/60">
+            <div class="text-[10px] text-slate-400">夾錢總額</div>
+            <div class="font-bold tabular-nums text-lg text-violet-700">${formatMoney(report.chipTotal, act)}</div>
+          </div>
+        </div>
+        ${groupLines ? `<div class="mb-3 space-y-1">${groupLines}</div>` : ''}
+        <div class="text-[10px] text-slate-400 mb-2">${basis}</div>
+        <div class="text-xs font-semibold text-slate-600 mb-1.5">每人個人實際開支</div>
+        <div class="space-y-1.5">${personLines || '<div class="text-xs text-slate-400">未有參加者</div>'}</div>
+      `;
+    }
+
+    function renderPartyBlock(act, view, kind) {
+      const partyHtml = view.parties.map(p => {
+        const word = positionWord(kind, p.balance);
+        const spend = roundMoney(p.members.reduce((s, m) => s + personActualSpend(act, m), 0), act);
+        const tone = Math.abs(p.balance) < 0.005 ? 'text-slate-500' : (p.balance > 0 ? 'text-violet-700' : 'text-red-600');
+        return `<div class="flex items-start justify-between gap-3 px-3 py-2 rounded-2xl bg-white/50 border border-white/60">
+          <div class="min-w-0">
+            <div class="font-semibold text-slate-800">${escapeHtml(p.label)}</div>
+            <div class="text-[10px] text-slate-400 mt-0.5">${p.members.map(m => escapeHtml(m)).join('、')} · 夾錢 ${formatMoney(p.chipTotal, act)} · 實際開支 ${formatMoney(spend, act)}</div>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="font-bold tabular-nums ${tone}">${word} ${formatMoney(Math.abs(p.balance), act)}</div>
+          </div>
+        </div>`;
+      }).join('');
+      const settleHtml = view.settlements.length
+        ? view.settlements.map(s => `
+          <div class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl settlement-row">
+            <div class="min-w-0 text-sm">
+              <span class="font-semibold text-red-600">${escapeHtml(s.from)}</span>
+              <span class="text-slate-400 px-1">欠</span>
+              <span class="font-semibold text-violet-700">${escapeHtml(s.to)}</span>
+            </div>
+            <div class="font-bold tabular-nums text-slate-800 shrink-0">${formatMoney(s.amount, act)}</div>
+          </div>`).join('')
+        : `<div class="text-xs text-violet-700 notice-glass px-3 py-2 rounded-2xl">組同組之間唔使轉。</div>`;
+      const externalRows = [];
+      view.parties.forEach(p => {
+        if (!p.grouped) return;
+        p.members.forEach(m => {
+          const ext = view.external[m] || 0;
+          externalRows.push(`<div class="flex items-baseline justify-between gap-3 text-xs">
+            <span class="text-slate-700 truncate">${escapeHtml(m)} <span class="text-slate-400">· ${escapeHtml(p.label)}</span></span>
+            <span class="tabular-nums font-semibold shrink-0 ${Math.abs(ext) < 0.005 ? 'text-slate-500' : ext > 0 ? 'text-violet-700' : 'text-red-600'}">${positionWord(kind, ext)} ${formatMoney(Math.abs(ext), act)}</span>
+          </div>`);
+        });
+      });
+      const externalHtml = externalRows.length
+        ? `<div class="mt-3 pt-3 border-t border-white/50">
+            <div class="text-[10px] font-semibold text-slate-500 mb-1.5">組對組之後 · 個人淨結果（組內已抵銷）</div>
+            <div class="space-y-1">${externalRows.join('')}</div>
+          </div>`
+        : '';
+      return `${partyHtml}<div class="mt-2 space-y-2">${settleHtml}</div>${externalHtml}`;
+    }
+
+    function renderGroupSettlement(act) {
+      const card = document.getElementById('group-settlement-card');
+      const body = document.getElementById('group-settlement-body');
+      const basis = document.getElementById('group-settlement-basis');
+      if (!card || !body || !act) return;
+      if (!hasNamedGroups(act)) {
+        card.classList.add('hidden');
+        body.innerHTML = '';
+        return;
+      }
+      const report = computeGroupReport(act);
+      card.classList.remove('hidden');
+      if (basis) {
+        basis.textContent = report.primaryKind === 'chip'
+          ? '同組加埋，組內唔出淨額。有夾份時呢度跟應退／應補（夾錢＋自己墊−洗費）。完團跟呢度退夾份，唔好再跟下面逐人建議還款轉一次。'
+          : '同組加埋，組內唔出淨額。呢度跟尚收／尚欠。下面逐人方案仍然在，可以標記已結清、找部分、或者由阿公找數。';
+      }
+      let html = renderPartyBlock(act, report.primaryView, report.primaryKind);
+      if (report.ledgerView) {
+        html += `<div class="mt-4 pt-3 border-t border-white/50">
+          <div class="text-xs font-semibold text-slate-700 mb-1">自己碌卡嘅組對組（帳面）</div>
+          <p class="text-[10px] text-slate-400 mb-2">未由夾份袋出嘅數。如果已經跟上面應退退錢，呢度唔好再轉一次。</p>
+          ${renderPartyBlock(act, report.ledgerView, 'ledger')}
+        </div>`;
+      }
+      body.innerHTML = html;
     }
 
     function syncFromChipRow(act) {
       const row = document.getElementById('from-chip-row');
       if (!row) return;
-      row.classList.toggle('hidden', getChipIn(act) <= 0);
+      row.classList.toggle('hidden', !chipModeOn(act));
     }
 
     function chipRefundLabel(refund) {
@@ -2114,8 +2723,7 @@
       act.updatedAt = Date.now();
       saveToStorage();
       syncFromChipRow(act);
-      renderChipInSummary();
-      renderPersonBreakdown(act);
+      refreshLedgerViews();
     }
 
     function onChipInBlur() {
@@ -2127,8 +2735,7 @@
       saveToStorage();
       input.value = act.chipIn > 0 ? moneyInputString(act.chipIn, act) : '';
       syncFromChipRow(act);
-      renderChipInSummary();
-      renderPersonBreakdown(act);
+      refreshLedgerViews();
     }
 
     function renderChipInField() {
@@ -2149,15 +2756,17 @@
       if (!el || !act) return;
       const chip = getChipIn(act);
       const people = act.participants || [];
-      if (chip <= 0) {
-        el.textContent = '每人一樣。用來計洗費同應退，唔算一筆開支。';
+      if (!chipModeOn(act)) {
+        el.textContent = '每人一樣。用來計洗費同應退，唔算一筆開支。分組之後可以改每組夾錢。';
         return;
       }
       if (people.length === 0) {
-        el.textContent = `先加入朋友。夾份 ${formatMoney(chip, act)} 會套用到每個人。`;
+        el.textContent = chip > 0
+          ? `先加入朋友。夾份 ${formatMoney(chip, act)} 會套用到每個人。`
+          : '先加入朋友，再喺組度填夾錢。';
         return;
       }
-      const total = roundMoney(chip * people.length, act);
+      const total = activityChipTotal(act);
       const figs = computeChipFigures(act);
       let refundSum = 0;
       const rows = people.map(name => {
@@ -2166,13 +2775,18 @@
         refundSum = roundMoney(refundSum + refund, act);
         const label = chipRefundLabel(refund);
         const refundClass = refund < -0.005 ? 'text-red-600' : 'text-violet-700';
+        const personChip = getPersonChipIn(act, name);
         return `<div class="grid grid-cols-[1fr_auto_auto] gap-x-3 items-baseline py-0.5">
           <span class="font-medium text-slate-700 truncate">${escapeHtml(name)}</span>
-          <span class="tabular-nums text-slate-500">洗費 ${formatMoney(spend, act)}</span>
+          <span class="tabular-nums text-slate-500">夾 ${formatMoney(personChip, act)} · 洗費 ${formatMoney(spend, act)}</span>
           <span class="tabular-nums font-semibold ${refundClass}">${label} ${formatMoney(Math.abs(refund), act)}</span>
         </div>`;
       }).join('');
-      el.innerHTML = `<div class="text-slate-500 mb-1">${people.length} 人合共 ${formatMoney(total, act)} · 應退加埋 ${formatMoney(refundSum, act)}</div>${rows}
+      const groupBits = ensureGroups(act)
+        .filter(g => (g.members || []).some(m => people.includes(m)))
+        .map(g => `${escapeHtml((g.name || '').trim() || '未命名組')} ${formatMoney(displayedGroupChip(act, g), act)}`)
+        .join(' · ');
+      el.innerHTML = `<div class="text-slate-500 mb-1">${people.length} 人合共 ${formatMoney(total, act)}${groupBits ? ` · ${groupBits}` : ''} · 應退加埋 ${formatMoney(refundSum, act)}</div>${rows}
         <div class="mt-1 text-[10px] text-slate-400">由夾份袋出的數唔當某人墊。自己碌卡就取消剔選。完團跟應退退錢，唔好再跟建議還款轉一次。</div>`;
     }
 
@@ -2182,7 +2796,7 @@
         || (Number(act.fundBalance) || 0) > 0
         || (act.fundTransfers || []).length > 0
         || (act.directSettlements || []).length > 0
-        || getChipIn(act) > 0;
+        || chipModeOn(act);
     }
 
     function roundActivityMoney(act) {
@@ -2192,6 +2806,7 @@
       });
       act.fundBalance = Math.max(0, roundMoney(act.fundBalance, act));
       if (act.chipIn) act.chipIn = Math.max(0, roundMoney(act.chipIn, act));
+      roundGroupChips(act);
       (act.fundTransfers || []).forEach(t => { t.amount = roundMoney(t.amount, act); });
       (act.directSettlements || []).forEach(t => { t.amount = roundMoney(t.amount, act); });
     }
@@ -2629,6 +3244,7 @@
         fundTransfers: [],
         directSettlements: [],
         fundBalance: 0,
+        groups: [],
         createdAt: Date.now(),
         updatedAt: Date.now()
       };
@@ -2744,9 +3360,8 @@
       renderParticipants();
       renderPayerOptions();
       renderSplitOptions();
-      renderStats();
-      renderChipInSummary();
-      renderPersonBreakdown(act);
+      renderGroups();
+      refreshLedgerViews();
       showToast(`已加入 ${name}`);
     }
 
@@ -2764,6 +3379,9 @@
       }
       
       act.participants = act.participants.filter(p => p !== name);
+      ensureGroups(act).forEach(g => {
+        g.members = g.members.filter(m => m !== name);
+      });
       act.updatedAt = Date.now();
       saveToStorage();
       
@@ -2936,7 +3554,7 @@
           exp.amount = amount;
           exp.splitWith = splitWith;
           exp.fundPaid = fundPaid;
-          exp.fromChip = getChipIn(act) > 0 && !!document.getElementById('from-chip')?.checked;
+          exp.fromChip = chipModeOn(act) && !!document.getElementById('from-chip')?.checked;
           
           // 調整阿公餘額（編輯時的差額）
           const delta = oldFundPaid - fundPaid;
@@ -2953,7 +3571,7 @@
           amount,
           splitWith,
           fundPaid: fundPaid,
-          fromChip: getChipIn(act) > 0 && !!document.getElementById('from-chip')?.checked,
+          fromChip: chipModeOn(act) && !!document.getElementById('from-chip')?.checked,
           createdAt: Date.now()
         });
         
@@ -3011,7 +3629,7 @@
       const fundInput = document.getElementById('fund-paid');
       if (fundInput) fundInput.value = '0';
       const fromChipBox = document.getElementById('from-chip');
-      if (fromChipBox) fromChipBox.checked = getChipIn(getCurrentActivity()) > 0;
+      if (fromChipBox) fromChipBox.checked = chipModeOn(getCurrentActivity());
       
       document.getElementById('expense-form-title').textContent = '新增開支';
       document.getElementById('expense-submit-btn').textContent = '新增開支';
@@ -3130,7 +3748,7 @@
                 <i class="fa-solid fa-user mr-1.5 text-amber-500"></i>
                 <span>${escapeHtml(exp.payer)} 俾</span>
               </div>
-              ${exp.fromChip && getChipIn(act) > 0 ? `
+              ${exp.fromChip && chipModeOn(act) ? `
               <div class="inline-flex items-center px-2 py-0.5 glass-pill text-slate-600 text-[10px] font-medium">夾份袋</div>` : ''}
               
               <div class="text-violet-600 font-medium tabular-nums">
@@ -3315,7 +3933,7 @@
       
       act.expenses.forEach(exp => {
         if (!exp.splitWith || exp.splitWith.length === 0) return;
-        if (exp.fromChip && getChipIn(act) > 0) return;
+        if (exp.fromChip && chipModeOn(act)) return;
         
         const { amountToSplit, shares } = getExpenseSplitDetails(exp, act);
         if (amountToSplit <= 0.005) return;
@@ -3362,7 +3980,7 @@
 
       act.expenses.forEach(exp => {
         if (!exp.splitWith || exp.splitWith.length === 0) return;
-        if (exp.fromChip && getChipIn(act) > 0) return;
+        if (exp.fromChip && chipModeOn(act)) return;
         const { amountToSplit, shares } = getExpenseSplitDetails(exp, act);
         if (amountToSplit <= 0.005) return;
 
@@ -3483,6 +4101,17 @@
       const balances = computeEffectiveBalances(act);
       const bookBalances = computeBalances(act);
       const hasHandled = getHandledSettlements(act).length > 0;
+      const groupExternal = {};
+      if (hasNamedGroups(act)) {
+        const view = settleParties(act, Object.keys(balances), balances);
+        view.parties.forEach(p => {
+          if (!p.grouped || p.members.length < 2) return;
+          p.members.forEach(m => {
+            const ext = view.external[m] || 0;
+            if (Math.abs(ext - (balances[m] || 0)) >= 0.01) groupExternal[m] = ext;
+          });
+        });
+      }
       
       container.innerHTML = '';
       
@@ -3500,6 +4129,9 @@
         const abs = Math.abs(val);
         const book = bookBalances[name] || 0;
         const bookDiffers = hasHandled && Math.abs(book - val) >= 0.01;
+        const extNote = Object.prototype.hasOwnProperty.call(groupExternal, name)
+          ? `<div class="text-[10px] text-violet-600/80 tabular-nums">組對組之後對外 ${formatSignedBalance(groupExternal[name])}</div>`
+          : '';
         if (abs < 0.01) {
           // Show as settled
           const row = document.createElement('div');
@@ -3508,6 +4140,7 @@
             <div class="min-w-0">
               <div class="font-medium">${escapeHtml(name)}</div>
               ${bookDiffers ? `<div class="text-[10px] text-slate-400 tabular-nums">帳面 ${formatSignedBalance(book)}</div>` : ''}
+              ${extNote}
             </div>
             <div class="text-right">
               <div class="font-semibold tabular-nums text-slate-500">${formatMoney(0)}</div>
@@ -3525,6 +4158,7 @@
           <div class="min-w-0">
             <div class="font-medium">${escapeHtml(name)}</div>
             ${bookDiffers ? `<div class="text-[10px] text-slate-400 tabular-nums">帳面 ${formatSignedBalance(book)}</div>` : ''}
+            ${extNote}
           </div>
           <div class="text-right">
             <div class="font-semibold tabular-nums ${isPositive ? 'text-violet-700' : 'text-red-600'}">
@@ -3544,6 +4178,7 @@
       const container = document.getElementById('settlements-list');
       const empty = document.getElementById('settlements-empty');
       const handledHint = document.getElementById('settlements-handled-hint');
+      const groupHint = document.getElementById('settlements-group-hint');
       const pending = getPendingSettlements(act);
       const transferred = ensureFundTransfers(act);
       const direct = ensureDirectSettlements(act);
@@ -3557,6 +4192,18 @@
         } else {
           handledHint.textContent = '';
           handledHint.classList.add('hidden');
+        }
+      }
+
+      if (groupHint) {
+        if (hasNamedGroups(act)) {
+          groupHint.textContent = chipModeOn(act)
+            ? '有分組。夾份嘅組對組喺上面。下面係逐人帳面還款（同以前一樣）。同組可以唔使轉；有夾份就唔好同應退轉兩次。'
+            : '有分組。組對組喺上面（同組已抵銷）。下面逐人方案保持原樣，可以標記已結清、找部分、由阿公找數。';
+          groupHint.classList.remove('hidden');
+        } else {
+          groupHint.textContent = '';
+          groupHint.classList.add('hidden');
         }
       }
       
@@ -3755,13 +4402,14 @@
       }
       empty.classList.add('hidden');
 
-      const chip = getChipIn(act);
-      const chipFigs = chip > 0 ? computeChipFigures(act) : null;
+      const cache = buildSpendCache(act);
+      const chipOn = cache.chipOn;
+      const report = hasNamedGroups(act) ? computeGroupReport(act) : null;
       const note = document.getElementById('person-breakdown-note');
       if (note) {
-        note.textContent = chip > 0
-          ? '洗費 = 分到佢身上嘅開支。應退 = 夾份 + 自己墊 − 洗費。'
-          : '帳面結餘 = 已付 − 應付（只計開支）。尚收／尚欠 = 帳面扣咗已結清／阿公找數後仲要轉嘅數。';
+        note.textContent = chipOn
+          ? '個人實際開支＝洗費（包括夾份袋）。應退＝夾錢＋自己墊−洗費。應付份額仍然只計未由夾份袋出嘅數。淨額＝尚收／尚欠。'
+          : '個人實際開支＝應付份額。帳面結餘＝已付−應付（只計開支）。尚收／尚欠＝帳面扣咗已結清／阿公找數後仲要轉嘅數。';
       }
 
       summaries.forEach(({ name, paid, owed, bookBalance, remainingBalance, settledOut, settledIn }) => {
@@ -3769,21 +4417,31 @@
         const isSettled = remAbs < 0.01;
         const isPositive = remainingBalance >= 0.005;
         const hasHandled = (settledOut > 0.005) || (settledIn > 0.005);
-        const spend = chipFigs ? (chipFigs.owed[name] || 0) : owed;
-        const refund = chip > 0 ? personChipRefund(act, name, chipFigs.personal[name] || 0, spend) : 0;
+        const actual = personActualSpend(act, name, cache);
+        const personChip = getPersonChipIn(act, name);
+        const personalPad = cache.figs.personal[name] || 0;
+        const spend = cache.figs.owed[name] || 0;
+        const refund = chipOn ? personChipRefund(act, name, personalPad, spend) : 0;
         const refundLabel = chipRefundLabel(refund);
-        const chipBlock = chip > 0 ? `
-          <div class="grid grid-cols-2 gap-2 mb-2">
-            <div class="px-2.5 py-1.5 rounded-xl bg-white/70 border border-white/60">
-              <div class="text-[10px] text-slate-400">洗費</div>
-              <div class="font-semibold tabular-nums text-slate-800 mt-0.5">${formatMoney(spend)}</div>
+        let externalLine = '';
+        if (report) {
+          const party = report.primaryView.parties.find(p => p.grouped && p.members.includes(name));
+          if (party) {
+            const ext = report.primaryView.external[name] || 0;
+            externalLine = `<div class="text-[10px] text-violet-700 mt-1.5">組對組之後 · ${escapeHtml(party.label)} · ${positionWord(report.primaryKind, ext)} ${formatMoney(Math.abs(ext))}</div>`;
+          }
+        }
+        const actualBlock = `
+          <div class="mb-2 px-2.5 py-2 rounded-xl bg-violet-50/70 border border-violet-200/40">
+            <div class="flex items-baseline justify-between gap-2">
+              <div class="text-[10px] text-violet-600">個人實際開支</div>
+              <div class="font-bold tabular-nums text-base text-slate-900">${formatMoney(actual)}</div>
             </div>
-            <div class="px-2.5 py-1.5 rounded-xl bg-white/70 border border-white/60 text-right">
-              <div class="text-[10px] ${refund < -0.005 ? 'text-red-500' : 'text-violet-600'}">${refundLabel}</div>
-              <div class="font-bold tabular-nums ${refund < -0.005 ? 'text-red-600' : 'text-violet-700'} mt-0.5">${formatMoney(Math.abs(refund))}</div>
-            </div>
+            <div class="text-[10px] text-slate-400 mt-0.5">${chipOn
+              ? `夾錢 ${formatMoney(personChip)} · 自己墊 ${formatMoney(personalPad)} · ${refundLabel} ${formatMoney(Math.abs(refund))}`
+              : '＝應付份額'}</div>
           </div>
-        ` : '';
+        `;
 
         const row = document.createElement('div');
         row.className = `px-3 py-3 rounded-2xl border ${isSettled ? 'glass-control' : isPositive ? 'balance-positive' : 'balance-negative'}`;
@@ -3800,7 +4458,7 @@
               </div>
             </div>
           </div>
-          ${chipBlock}
+          ${actualBlock}
           <div class="grid grid-cols-2 gap-2 text-[11px]">
             <div class="px-2.5 py-1.5 rounded-xl bg-white/50 border border-white/50">
               <div class="text-slate-400">已付</div>
@@ -3823,6 +4481,7 @@
             ${formatMoney(paid)} − ${formatMoney(owed)} = 帳面 ${formatSignedBalance(bookBalance)}
             ${hasHandled ? `<br>已還 ${formatMoney(settledOut)} · 已收 ${formatMoney(settledIn)} → 尚${isSettled ? '兩清' : (isPositive ? '收' : '欠')} ${isSettled ? formatMoney(0) : formatMoney(remAbs)}` : ''}
           </div>
+          ${externalLine}
         `;
 
         container.appendChild(row);
@@ -3835,7 +4494,10 @@
       
       ensureFundTransfers(act);
       ensureDirectSettlements(act);
+      ensureGroups(act);
       
+      renderTripSummary(act);
+      renderGroupSettlement(act);
       renderBalances(act);
       renderSettlements(act);
       renderPersonBreakdown(act);
@@ -3857,6 +4519,7 @@
       
       // Participants + form options
       renderParticipants();
+      renderGroups();
       renderPayerOptions();
       
       // If not editing, default split to all
@@ -3910,6 +4573,12 @@
         dateEnd: act.dateEnd || null,
         currency: activityCurrency(act),
         chipIn: getChipIn(act),
+        groups: ensureGroups(act).map(g => ({
+          id: g.id,
+          name: g.name || '',
+          members: [...(g.members || [])],
+          chipTotal: g.chipTotal ? roundMoney(g.chipTotal, act) : null
+        })),
         participants: [...(act.participants || [])],
         expenses: (act.expenses || []).map(exp => ({
           id: exp.id,
@@ -3955,8 +4624,15 @@
     function buildSharePayloadText(act) {
       const payload = buildActivityExportPayload(act);
       const json = JSON.stringify(payload);
+      const groups = ensureGroups(act).filter(g => (g.members || []).length);
+      const groupLine = groups.length
+        ? `\n👥 分組：${groups.map(g => `${(g.name || '').trim() || '未命名組'}（${(g.members || []).join('、')}）`).join('；')}`
+        : '';
+      const chipLine = chipModeOn(act)
+        ? `\n🤝 夾錢總額：${formatMoney(activityChipTotal(act), act)}${getChipIn(act) > 0 ? `（每人 ${formatMoney(getChipIn(act), act)}）` : ''}`
+        : '';
       return `📋 神算子記帳資料｜${act.name}
-💱 ${currencyLabel(act)}${getChipIn(act) > 0 ? `\n🤝 每人夾份：${formatMoney(getChipIn(act), act)}` : ''}
+💱 ${currencyLabel(act)}${chipLine}${groupLine}
 👉 接手人：長撳全段複製 → 開神算子 → 撳「接手記帳」→ 貼上就得
 
 ${SHARE_DATA_START}
@@ -4085,9 +4761,18 @@ ${SHARE_DATA_END}`;
         })).filter(t => t.from && t.to && t.amount > 0);
       }
 
+      act.groups = Array.isArray(raw.groups) ? raw.groups.map(g => ({
+        id: g && g.id ? String(g.id) : generateId(),
+        name: g && typeof g.name === 'string' ? g.name : '',
+        members: Array.isArray(g && g.members) ? g.members.map(m => String(m).trim()).filter(Boolean) : [],
+        chipTotal: g && g.chipTotal != null && g.chipTotal !== '' ? Number(g.chipTotal) : null
+      })) : [];
+
       ensureActivityDates(act);
       ensureFundTransfers(act);
       ensureDirectSettlements(act);
+      ensureGroups(act);
+      roundGroupChips(act);
       return act;
     }
 
@@ -4269,9 +4954,18 @@ ${SHARE_DATA_END}`;
       }
       text += `💱 ${currencyLabel(act)}\n`;
       const shareChip = getChipIn(act);
+      const shareChipOn = chipModeOn(act);
       if (shareChip > 0) {
         const sharePeople = act.participants || [];
         text += `🤝 每人夾份：${formatMoney(shareChip)}（${sharePeople.length} 人合共 ${formatMoney(roundMoney(shareChip * sharePeople.length, act))}）\n`;
+      } else if (shareChipOn) {
+        text += `🤝 夾錢總額：${formatMoney(activityChipTotal(act))}\n`;
+      }
+      if (hasNamedGroups(act)) {
+        ensureGroups(act).filter(g => (g.members || []).length).forEach(g => {
+          const gName = (g.name || '').trim() || '未命名組';
+          text += `👥 ${gName}（${(g.members || []).join('、')}）夾錢 ${formatMoney(displayedGroupChip(act, g))}\n`;
+        });
       }
       text += `${divider}\n`;
       text += `💰 總開支：${formatMoney(total)}\n`;
@@ -4306,16 +5000,45 @@ ${SHARE_DATA_END}`;
 
       text += `${divider}\n`;
       const summaries = computePersonSummaries(act);
-      const chip = getChipIn(act);
-      const chipFigs = chip > 0 ? computeChipFigures(act) : null;
-      if (chip > 0) {
-        text += `【每人洗費／應退】\n`;
+      const shareCache = buildSpendCache(act);
+      const chipFigs = shareCache.chipOn ? shareCache.figs : null;
+      if (shareCache.chipOn) {
+        text += `【每人個人實際開支／應退】洗費＝個人實際開支\n`;
         (act.participants || []).forEach(name => {
           const spend = chipFigs.owed[name] || 0;
           const refund = personChipRefund(act, name, chipFigs.personal[name] || 0, spend);
-          text += `${name}：洗費 ${formatMoney(spend)}，${chipRefundLabel(refund)} ${formatMoney(Math.abs(refund))}\n`;
+          text += `${name}：洗費 ${formatMoney(spend)}，夾錢 ${formatMoney(getPersonChipIn(act, name))}，${chipRefundLabel(refund)} ${formatMoney(Math.abs(refund))}\n`;
         });
         text += `完團跟應退由夾份袋退錢，唔好再跟建議還款轉一次。\n`;
+        text += `${divider}\n`;
+      } else if (summaries.length) {
+        text += `【每人個人實際開支】＝應付份額\n`;
+        summaries.forEach(s => {
+          text += `${s.name}：${formatMoney(s.owed)}\n`;
+        });
+        text += `${divider}\n`;
+      }
+      if (hasNamedGroups(act)) {
+        const report = computeGroupReport(act);
+        text += `【組對組】同組唔出淨額\n`;
+        report.primaryView.parties.forEach(p => {
+          text += `${p.label}：${positionWord(report.primaryKind, p.balance)} ${formatMoney(Math.abs(p.balance))}\n`;
+        });
+        if (report.primaryView.settlements.length) {
+          report.primaryView.settlements.forEach(s => {
+            text += `${s.from} 欠 ${s.to} ${formatMoney(s.amount)}\n`;
+          });
+        } else {
+          text += `組同組之間唔使轉。\n`;
+        }
+        text += `【組對組之後個人】\n`;
+        report.primaryView.parties.forEach(p => {
+          if (!p.grouped) return;
+          p.members.forEach(m => {
+            const ext = report.primaryView.external[m] || 0;
+            text += `${m}：${positionWord(report.primaryKind, ext)} ${formatMoney(Math.abs(ext))}\n`;
+          });
+        });
         text += `${divider}\n`;
       }
       text += '【每人明細】帳面=已付−應付；尚收/尚欠=扣已還後\n';
@@ -4860,7 +5583,17 @@ ${SHARE_DATA_END}`;
       }, 1200);
       
       // Expose for debugging (optional)
-      window.SANSUANZI = { getActivities: () => activities, getFund: (id) => { const a = activities.find(x => x.id === id) || getCurrentActivity(); return a ? ensureFundBalance(a) : 0; } };
+      window.SANSUANZI = {
+        getActivities: () => activities,
+        getFund: (id) => { const a = activities.find(x => x.id === id) || getCurrentActivity(); return a ? ensureFundBalance(a) : 0; },
+        computeGroupReport,
+        personActualSpend,
+        activityChipTotal,
+        buildSpendCache,
+        getPersonChipIn,
+        computeBalances,
+        getPendingSettlements
+      };
     }
 
     // ==================== Bug Report ====================
@@ -4927,6 +5660,28 @@ ${SHARE_DATA_END}`;
         dateKind: getActivityDateKind(act)?.label || null,
         currency: activityCurrency(act),
         chipIn: getChipIn(act),
+        chipTotal: activityChipTotal(act),
+        groups: ensureGroups(act).map(g => ({
+          id: g.id,
+          name: g.name || '',
+          members: [...(g.members || [])],
+          chipTotal: g.chipTotal || null
+        })),
+        actualSpend: buildSpendCache(act).spend,
+        groupReport: hasNamedGroups(act) ? (() => {
+          const report = computeGroupReport(act);
+          return {
+            kind: report.primaryKind,
+            parties: report.primaryView.parties.map(p => ({
+              name: p.label,
+              members: [...p.members],
+              balance: p.balance,
+              chipTotal: p.chipTotal
+            })),
+            settlements: report.primaryView.settlements.map(s => ({ from: s.from, to: s.to, amount: s.amount })),
+            external: report.primaryView.external
+          };
+        })() : null,
         participants: [...act.participants],
         expenseCount: act.expenses.length,
         totalExpenses: Math.round(act.expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0) * 100) / 100,
@@ -5013,6 +5768,10 @@ ${SHARE_DATA_END}`;
         }
         text += `貨幣：${focus.currency === 'JPY' ? '日圓' : '港幣'}\n`;
         text += `每人夾份：${focus.chipIn > 0 ? formatMoney(focus.chipIn, focus) : '無'}\n`;
+        text += `夾錢總額：${formatMoney(focus.chipTotal || 0, focus)}\n`;
+        if ((focus.groups || []).some(g => (g.members || []).length)) {
+          text += `分組：${focus.groups.filter(g => (g.members || []).length).map(g => `${g.name || '未命名組'}（${(g.members || []).join('、')}）`).join('；')}\n`;
+        }
         text += `參加者：${focus.participants.join('、') || '（無）'}\n`;
         text += `總開支：${formatMoney(focus.totalExpenses)}（${focus.expenseCount} 筆）\n`;
         text += `帳面結餘總和（應為 0）：${focus.balanceSum}\n`;
@@ -5142,10 +5901,12 @@ ${SHARE_DATA_END}`;
 
 1. 建立活動（例如「唱K + 食飯」），可選日期同貨幣（港幣或日圓）
 2. 加入所有朋友名字。有夾份就喺「每人夾份」打一次（四人夾 120,000 就打 30000）
+   兩組各夾：撳「建組」，拉人入組，喺「呢組夾錢」打 60000。留空就用每人夾份 × 人數。
 3. 新增每筆開支：邊個俾錢、幾多錢、項目、參加者
    日圓用整數。同一個活動只用一種貨幣，唔會自動換匯。
 4. 有需要可以開「阿公」— 每個活動有自己嘅公數，墊支同結算轉入
-5. 系統自動計算每人結餘同最少還款方案
+5. 「旅程總結」睇總費用、夾錢、每人個人實際開支（有夾份＝洗費，冇夾份＝應付份額）
+   有分組先有「組對組」：同組抵銷，只睇邊組欠邊組。逐人結算、找部分、阿公照舊。
 
 文字太細？撳右上角「文字」掣，可喺 標準 / 大 / 特大 之間切換（會記住偏好）。
 
